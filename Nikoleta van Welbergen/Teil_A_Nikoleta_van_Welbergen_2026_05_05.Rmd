@@ -1,0 +1,3142 @@
+---
+title: 'Actuarial Data Science Immersion 2026- Teil A'
+author: "Nikoleta van Welbergen" 
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    number_sections: false
+    fig_caption: true
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    fig_width: 7 #10
+    fig_height: 4.5 #6
+    theme: readable #cosmo #yeti #flatly #lumen
+    highlight: monochrome #pygments #tango
+    code_folding: show #show #hide
+   
+---
+```{css, echo=FALSE}
+.exercise {
+  display: block;
+  font-style: italic;
+  font-size: 12pt;
+  font-family: "Times New Roman";
+  text-align:justify;
+  color: black;
+  border-radius: 10px;
+  background-color: rgb(236,231,242);
+  box-shadow: 5px 10px 8px #888888;
+  
+}
+.exercise::before{
+  content: attr(nummer) ": " attr(text);
+  font-weight: bold;
+  font-style: normal;
+  text-align: left;
+  display: inline-block;
+  width: -webkit-fill-available;
+  color: white;
+  border-radius: 10px 10px 0 0;
+  padding: 10px 5px 5px 15px;
+  background-color: rgb(43,140,190);
+}
+
+
+.exercise p {
+  padding: 15px 15px 15px 15px;
+}
+.exercise_part{
+  display: block;
+  font-style: italic;
+  font-size: 12pt;
+  font-family: "Times New Roman";
+  text-align:justify;
+  color: black;
+  border-radius: 10px;
+  background-color: rgb(236,231,242);
+  box-shadow: 5px 10px 8px #888888;
+  padding: 15px 15px 15px 15px;
+  
+}
+/*.exercise_part::before{
+  content: attr(nummer) ": " attr(text);
+  font-weight: bold;
+  font-style: normal;
+  text-align: left;
+  display: inline-block;
+  width: -webkit-fill-available;
+  border-radius: 10px 10px 0 0;
+  padding: 10px 5px 5px 15px;
+}*/
+
+
+.exercise_part p {
+  padding: 15px 15px 15px 15px;
+}
+
+```
+
+```{r setup, include = FALSE, echo = FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  error = TRUE
+  ) 
+```
+
+# Teil A: Explorative Datenanalyse [75 Punkte]
+<div style="text-align: justify">
+Das Ziel von Teil A ist die systematische Durchführung einer explorativen Datenanalyse (EDA) des Hauptdatensatzes
+```Motor vehicle insurance data.csv```. In diesem Datensatz finden sich (anonymisierte) Einträge
+eines realen Kfz-Versicherungsportfolios eines spanischen Versicherers mit unterschiedlichen Merkmalen:
+von persönlichen Informationen zum Fahrer über spezifische Fahrzeugdaten bis hin zu versicherungstechnischen
+Merkmalen wie den gezahlten Prämien. Ergänzt wird der Hauptdatensatz durch den Zusatzdatensatz
+```sample type claim.csv```, in welchem für eine Stichprobe des Hauptdatensatzes die Schadenkosten nach
+unterschiedlichen Schadenarten aufgeschlüsselt werden, sowie durch den Datensatz ```Descriptive of the
+variables.xlsx```, in welchem die einzelnen Merkmale der Haupt- und Nebendatensätze beschrieben werden.
+Weitere Hintergrundinformationen sowie detailliertere Beschreibungen dieser Datensätze finden sich in folgendem
+Artikel:
+
+J. Segura-Gisbert, J. Lledó & J. M. Pavía, Dataset of an actual motor vehicle insurance portfolio,
+European Actuarial Journal 15 (2025), 241–253, https://doi.org/10.1007/s13385-024-00398-0.
+
+In den einzelnen Aufgaben A1 bis A4 behandeln wir grundlegende Vorverarbeitungen und Analysen, Auffälligkeiten
+in den versicherungstechnischen Ergebnissen, Methoden des Unüberwachten Lernens sowie weitere
+Vorbereitungen für die anschließende Tarifierung und Modellierung.
+</div>
+# A1: Erste Analysen der Datensätze
+
+[Lernziele: 2.1, 2.2, 3.4 & 5.1 | Punkte: 24]
+<div class="exercise" nummer="A1" text="Erste Analysen der Datensätze" >
+In dieser Aufgabe wird der Hauptdatensatz eingelesen, strukturiert beschrieben und hinsichtlich seiner Datenqualität
+geprüft; zudem werden erste Datenanalysen durchgeführt.
+</div>
+
+## a) Vorbereitungen, Reproduzierbarkeit & Datenimport
+<div class="exercise_part" nummer="A1.a)" text="Vorbereitungen, Reproduzierbarkeit & Datenimport" >
+Laden Sie an dieser Stelle alle für die weiteren
+Aufgaben benötigten Pakete. Achten Sie dabei darauf, ausschließlich Pakete zu verwenden, die tatsächlich
+benötigt werden, um Effizienz und Lesbarkeit des Notebooks sicherzustellen. Stellen Sie zudem die
+Reproduzierbarkeit des Notebooks sicher. Lesen Sie anschließend den Hauptdatensatz ```Motor vehicle insurance data.csv``` sowie den Zusatzdatensatz ```sample type claim.csv``` ein und geben Sie jeweils (i)
+die Anzahl an Zeilen und Spalten sowie (ii) eine Zufallsstichprobe bestehend aus zehn aufeinanderfolgenden
+Zeilen aus. Geben Sie außerdem die Datentypen aller Merkmale aus, prüfen Sie diese auf Plausibilität
+und passen Sie sie bei Bedarf an. Stellen Sie dabei sicher, dass alle Merkmale, deren Namen mit „Date“
+beginnen, als Datum erkannt und formatiert werden. Im Hauptdatensatz werden letztlich sechs Datumsmerkmale
+und acht kategoriale Merkmale erwartet (N_doors ist als kategorial zu behandeln); alle weiteren
+Variablen sollten numerisch vorliegen. Im Zusatzdatensatz werden zwei kategoriale und zwei numerische
+Merkmale erwartet.
+ </div>
+### Lösung:
+
+#### Vorbereitungen
+
+##### Darstellung im Fließtext und in Code-Ausgaben
+
+In dieser Lösung wird zwischen der Darstellung im Fließtext und den automatisch erzeugten Code-Ausgaben unterschieden. Im Fließtext wird die deutsche Schreibweise verwendet, also ein Komma als Dezimaltrennzeichen, ein Punkt als Tausendertrennzeichen und das Datumsformat `TT.MM.JJJJ`.
+
+Code-Ausgaben aus R bzw. aus Code-Chunks können dagegen standardmäßig die amerikanische Schreibweise verwenden, also einen Punkt als Dezimaltrennzeichen, ein Komma als Tausendertrennzeichen und das Datumsformat `JJJJ-MM-TT`.
+
+Bei selbst erstellten Tabellen wird die gewünschte Darstellung über die definierten Hilfsfunktionen gesteuert.
+
+Zunächst werden alle benötigten Pakete installiert, geladen, Hilfsfunktionen definiert, wichtige Punkte für die Reproduzierbarkeit aufgelistet.
+
+##### Pakete 
+
+###### Installation der Pakete
+
+```{r a1a installation der pakete}
+packages_lst<-c("tidyverse","readr","DT","here","scales","ggplot2","Amelia","mice","ggrain","patchwork","reshape2","rcompanion","GGally","cluster","factoextra","plotly","fastICA","pls")
+to_install <- setdiff(packages_lst, installed.packages()[, "Package"])
+if (length(to_install) > 0) {
+  install.packages(to_install)
+}
+
+```
+
+###### Laden der verwendete Pakete 
+
+n einem nächsten Schritt laden wir die notwendigen Pakete. Das Laden der Pakete ist jeweils kommentiert: entweder mit der Teilaufgabe, in der das Paket verwendet wurde, oder mit der Nennung der Funktion aus dem Paket, die benutzt wurde. Damit stellen wir sicher, dass nur notwendige Pakete verwendet werden.
+```{r a1a pakete,ECHO=TRUE}
+#Datenmanipulation
+library(tidyverse) #Data Science Paket
+library(readr)     #read_delim Funktion (Aufgabe A1.a)
+library(DT)        #datatable für Darstellung des Tibbles
+library(here)      #Pfad (Aufgabe A1a)
+library(scales)    #Formattierung
+library(reshape2)  # Funktion melt (Aufgabe A1.d)
+
+#Visualisierung
+library(ggplot2)   #Stadard Paket für Visualisierung -ggplot2 Funktion
+library(Amelia)    #Funktion missmap (A1.b)
+library(mice)      #Funktion md.pattern für fehlende Werte (Aufgabe A1.b)
+library(ggrain)    #Raincloud Plot (Aufgabe A1.c)
+library(patchwork) #plot_layout  (Aufgabe A1.c)
+library(plotly)    #plot_ly Funktion-3D Plot (Aufgabe A3.a)
+library(GGally)    #Pair Plots ggpairs (Aufgabe A1.f)
+
+#Modellierung
+library(cluster)     # (Aufgabe A3.a)
+library(factoextra)  # (Aufgabe A3.a)
+library(fastICA)     # ICA (Aufgabe A3.c)
+library(pls)         # PLS (Aufgabe A3.d)
+library(rcompanion)  # Funktion cramerV (Aufgabe A1.d)
+```
+##### Barrierefreiheit 
+
+In diesem Schritt definieren wir die Farbpaletten für die späteren Grafiken. Die Auswahl basiert auf [ColorBrewer](https://colorbrewer2.org), einer Webseite zur Erstellung farbenblind-freundlicher Farbpaletten für statistische Visualisierungen. Es werden allgemeine Paletten mit 6 und 9 Farben sowie spezifische Paletten für Zeitreihen und die Variablen ```Year``` und ```Type_Risk``` festgelegt. Dadurch wird eine konsistente und gut lesbare Darstellung der Grafiken gewährleistet.
+
+```{r a1a barierrefreiheit }
+# Allgemeine Palette mit 6 Farben
+#https://colorbrewer2.org/?type=diverging&scheme=RdBu&n=6
+Palette6=c('#b2182b','#ef8a62','#fddbc7','#d1e5f0','#67a9cf','#2166ac')
+# Allgemeine Palette mit 9 Farben (mit einer Anpassung von '#ffffbf' auf '#000000')
+#https://colorbrewer2.org/?type=diverging&scheme=RdYlBu&n=9
+Palette9=c('#d73027','#f46d43','#fdae61','#fee090','#000000','#e0f3f8','#abd9e9','#74add1','#4575b4')
+#Palette für Zeitreihen 
+#https://colorbrewer2.org/?type=sequential&scheme=Blues&n=6
+Palette_Year=c('#eff3ff','#c6dbef','#9ecae1','#6baed6','#3182bd','#08519c')
+#Palette für Type_Risk
+#https://colorbrewer2.org/?type=diverging&scheme=RdYlBu&n=4
+Palette_Risk=c('#d7191c','#fdae61','#abd9e9','#2c7bb6')
+
+```
+
+##### Hilfsfunktionen
+
+
+Im nächsten Schritt definieren wir mehrere Hilfsfunktionen zur einheitlichen Formatierung von Zahlen, Prozentwerten, Datumsangaben und Tabellen. Zunächst werden spezielle Formatierungsfunktionen für Prozentwerte, numerische Werte und Datumsangaben erstellt. Dabei werden sowohl die deutsche als auch die amerikanische Schreibweise berücksichtigt.
+
+Für die deutsche Darstellung wird ein Komma als Dezimaltrennzeichen, ein Punkt als Tausendertrennzeichen und das Datumsformat `TT.MM.JJJJ` verwendet. Für die amerikanische Darstellung wird ein Punkt als Dezimaltrennzeichen, ein Komma als Tausendertrennzeichen und das Datumsformat `JJJJ-MM-TT` verwendet.
+
+Die Funktion `table_format_de()` wendet die deutsche Formatierung automatisch auf einen Datensatz an. Datumsvariablen werden im deutschen Datumsformat dargestellt, numerische Variablen mit der Endung `_pct` werden als Prozentwerte formatiert, und übrige numerische Variablen werden als Zahlen mit deutscher Schreibweise ausgegeben.
+
+Analog dazu wendet die Funktion `table_format_us()` die amerikanische Formatierung auf einen Datensatz an. Diese Funktion wird insbesondere verwendet, wenn Tabellen im gleichen Format wie die Ausgaben aus R-Code-Chunks dargestellt werden sollen.
+
+Die Funktion `table_visualize()` dient anschließend der übersichtlichen Darstellung von Tabellen mit dem Paket `DT`. Dabei kann über das Argument `table_format` gesteuert werden, ob eine Tabellenformatierung verwendet wird. Über das `table_format_de_flag` steuert man, ob die deutsche oder die amerikanische Tabellenformatierung verwendet wird. Wenn `table_format_de_flag = TRUE` gesetzt ist, wird die deutsche Formatierung angewendet; andernfalls wird standardmäßig die amerikanische Formatierung verwendet. Zusätzlich werden horizontales und vertikales Scrollen aktiviert, alle Zeilen ohne Pagination angezeigt und eine Tabellenbeschriftung unterhalb der Tabelle eingefügt.
+
+```{r a1a hilfsfunktionen 1 formatierung}
+#Spezielle Formatierung für Prozente, Zahlen und Datum als Funktionen
+pct_format <- scales::label_percent(accuracy = 0.01,decimal.mark=",")
+integer_format<-scales::label_number(big.mark=".",decimal.mark=",")
+date_format<-scales::label_date(format = "%d.%m.%Y", locale ="de_DE")
+pct_format_us <- scales::label_percent(accuracy = 0.01,decimal.mark=".")
+date_format_us<-scales::label_date(format = "%Y-%m-%d", locale ="us_US")
+
+#Eine Funktion für besondere Formatierung der Tabellen
+table_format_de<- function(df) {
+    df[] <- lapply(names(df), function(col_name) {
+    column<- df[[col_name]]
+    
+    # Fall 1: Datum Spalten
+    if (inherits(column, "Date")) {
+      return(date_format(column))
+    }
+    
+    # Fall 2: Numerische Spalte deren Name endet mit '_pct' (Prozent)
+    if (is.double(column) && grepl("_pct$", col_name)) {
+      return(pct_format(column))
+    }
+    
+    # Falle 3: Die restliche double Spalten
+    if (is.double(column)) {
+      return(scales::label_number(accuracy = 0.001,big.mark = ".", decimal.mark = ",")(column))
+    }
+    # Sonst, unverändertes Format
+    return(column)
+  })
+  
+  return(df)
+}
+table_format_us<- function(df) {
+    df[] <- lapply(names(df), function(col_name) {
+    column<- df[[col_name]]
+    
+    # Fall 1: Datum Spalten
+    if (inherits(column, "Date")) {
+      return(date_format_us(column))
+    }
+    
+    # Fall 2: Numerische Spalte deren Name endet mit '_pct' (Prozent)
+    if (is.double(column) && grepl("_pct$", col_name)) {
+      return(pct_format_us(column))
+    }
+    
+    # Falle 3: Die restliche double Spalten
+    if (is.double(column)) {
+      return(scales::label_number(accuracy = 0.001,big.mark = ",", decimal.mark = ".")(column))
+    }
+    # Sonst, unverändertes Format
+    return(column)
+  })
+  
+  return(df)
+}
+#Hilfsfunktion für Darstellung einer Tabelle
+table_visualize <- function(tbl, tbl_no, title, table_format=FALSE,table_format_de_flag = FALSE) {
+  if (table_format == TRUE) {
+    if (table_format_de_flag == TRUE) {
+      tbl[] <- table_format_de(tbl)
+    } else {
+      tbl[] <- table_format_us(tbl)
+    }
+  }
+  datatable(
+    tbl,
+    caption = htmltools::tags$caption(
+      style = 'caption-side: bottom; text-align: center;',
+      paste("Tabelle ", tbl_no,".", sep = " "),
+      htmltools::em(title)
+    ),
+    options = list(
+      scrollX = TRUE,
+      scrollY = "60vh",
+      dom = 'ti',
+      pageLength = -1 # Darstellung aller Zeilen ohne Pagination
+    )
+  )
+}
+
+
+```
+
+In nächstem Code definieren wir eine Hilfsfunktion zur Untersuchung fehlender Werte in einem Datensatz. Die Funktion *missing_data_statistics()* berechnet für jede Variable die absolute Anzahl fehlender Werte sowie den Anteil fehlender Werte. Anschließend werden die Variablen absteigend nach dem Anteil fehlender Werte sortiert. Dadurch lässt sich schnell erkennen, welche Variablen besonders viele fehlende Beobachtungen enthalten.
+
+```{r a1a hilfsfunktionen 2 fehlende werten}
+missing_data_statistics<-function(df){
+res<-df %>%
+gather(Variable, Value) %>%
+group_by(Variable)%>%
+summarize(Missing_counts = sum(is.na(Value)),Missing_pct = mean(is.na(Value))) %>%
+  arrange(desc(Missing_pct)) 
+return(res)
+}
+```
+
+#### Reproduzierbarkeit
+
+Für die Reproduzierbarkeit werden folgende Punkte beachtet:
+
+-   Laden aller verwendeten Pakete 
+-   Zufallszahlen werden mit *set.seed(2484)* gesetzt.
+-   Verwendung der Funktion *sessionInfo_attached()* am Ende des Notbooks, um alle technischen Voraussetzungen nachvollziehen zu können.
+-   Verwendung von relativen Pfaden mithilfe Paket *here*
+-   Verwendung von *knitr::opts_chunk\$set()*.
+-   Falls die Ausarbeitung in einem Projekt verwaltet werden würde (das ist hier nicht der Fall) könnten mit *renv* die verwendeten Pakete reproduzierbar gemacht werden.
+
+```{r a1a seed}
+seed<-set.seed(2484) # stellt sicher, dass Zufallszahlen und zufallsbasierte Auswahlen reproduzierbar sind
+
+```
+
+#### Datenimport
+
+##### Der Hauptdatensatz ```Motor vehicle insurance data.csv```
+
+Hier lesen wir den Hauptdatensatz ```Motor vehicle insurance data.csv``` ein. Dafür verwenden wir die Methode, die im Skript zur Vorlesung „Spezialwissen Actuarial Data Science 1“ vom 01.02.2024 bis 03.02.2024 beschrieben wurde. Konkret beziehen wir uns auf den Teil „ADSB_5.3_Programmiersprachen_für_Data_Science_-_R.pdf“, Kapitel 7.3.4 „Benutzeroberfläche“, Seiten 134–140.
+
+```{r a1a datenimport hauptdatensatz einlesen}
+# Hauptdatensatz Motor vehicle insurance data.csv einlesen
+
+Insurance_data<- read_delim(here("data","Motor vehicle insurance data.csv"), 
+    delim = ";", escape_double = FALSE, col_types = cols(
+       # 6 Datumspalten
+        Date_start_contract = col_date(format = "%d/%m/%Y"), 
+        Date_last_renewal = col_date(format = "%d/%m/%Y"), 
+        Date_next_renewal = col_date(format = "%d/%m/%Y"), 
+        Date_birth = col_date(format = "%d/%m/%Y"), 
+        Date_driving_licence = col_date(format = "%d/%m/%Y"), 
+        Date_lapse = col_date(format = "%d/%m/%Y"),
+        # 8 kategoriale Merkmale
+        ID =readr::col_factor(), 
+        Distribution_channel =readr::col_factor(levels = c("0", "1")),
+        Payment =readr::col_factor(levels = c("0","1")), 
+        Type_risk =readr::col_factor(levels = c("1","2", "3", "4")), 
+        Area =readr::col_factor(levels = c("0","1")), 
+        Second_driver =readr::col_factor(levels = c("0","1")), 
+        N_doors =readr::col_factor(levels = c("0","2","3","4","5","6"),ordered=TRUE), 
+        Type_fuel =readr::col_factor(levels = c("D","P")),
+        # Numerische Merkmale - diskret
+        Seniority = col_integer(), 
+        Policies_in_force = col_integer(), 
+        Max_policies = col_integer(), 
+        Max_products = col_integer(), 
+        Lapse = col_integer(), 
+        N_claims_year = col_integer(), 
+        N_claims_history = col_integer(), 
+        Year_matriculation = col_integer())
+        ,trim_ws = TRUE)
+problems(Insurance_data)
+
+```
+
+(i) Der Hauptdatensatz hat `r integer_format(dim(Insurance_data)[1])` Zeilen und `r integer_format(dim(Insurance_data)[2])` Spalten.
+
+
+```{r a1a datenimport hauptdatensatz stichprobe}
+Sample_size=10
+Sample_start <-as.integer(sample(1:dim(Insurance_data)[1]-Sample_size+1,1))
+Sample_data<-as_tibble(Insurance_data[Sample_start:(Sample_start+Sample_size-1),])
+```
+(ii) Dargestellt ist eine Zufallsstichprobe von `r Sample_size` aufeinanderfolgenden Zeilen, beginnend mit der `r integer_format(Sample_start)`-ten Zeile:
+
+
+```{r a1a datenimport hauptdatensatz stichprobe darstellen}
+table_visualize(Sample_data,"1","Stichprobe des Hauptdatensatzes",table_format=FALSE,table_format_de_flag = FALSE)
+
+```
+ Im Folgenden werden die Datentypen der Merkmale im Datensatz dargestellt:
+ 
+```{r a1a datenimport hauptdatensatz merkmale datentyp}
+Insurance_data %>%
+  summarise(across(everything(), ~ class(.x)[1])) %>%
+  pivot_longer(
+    cols = everything(),
+    names_to = "Variable",
+    values_to = "Datentyp"
+  ) %>%
+  table_visualize(
+    tbl_no = "2",
+    title = "Datentypen der Merkmale im Hauptdatensatz",table_format=FALSE,table_format_de_flag = FALSE
+  )
+```
+
+
+##### Der Zusatzdatensatz ```sample type claim.csv```
+
+Analog zum Hauptdatensatz wird im Folgenden Teilaufgabe a) für den Zusatzdatensatz bearbeitet.
+
+```{r a1a datenimport zusatzdatensatz einlesen}
+# Zusatzdatensatz sample type claim.csv einlesen
+Claim_data<- read_delim(here("data","sample type claim.csv"), 
+             delim = ";", escape_double = FALSE, 
+col_types = cols(
+       # 2 kategoriale Merkmale
+        ID =readr::col_factor(), 
+        Claims_type =readr::col_factor()
+        #Rest:Numerisch
+         )
+        )
+```
+
+(i) Der Zusatzdatensatz hat `r integer_format(dim(Claim_data)[1])` Zeilen und `r integer_format(dim(Claim_data)[2])` Spalten.
+
+
+
+```{r a1a datenimport zusatzdatensatz stichprobe}
+Sample_size<-10
+Sample_start <-as.integer(sample(1:dim(Claim_data)[1]-Sample_size+1,1))
+Sample_data<-as_tibble(Claim_data[Sample_start:(Sample_start+Sample_size-1),])
+```
+
+(ii) Hier wird eine Zufallsstichprobe aus `r Sample_size` aufeinanderfolgenden Zeilen dargestellt. Die Stichprobe beginnt mit der `r integer_format(Sample_start)`-ten Zeile:
+
+```{r a1a datenimport zusatzdatensatz stichprobe darstellung}
+table_visualize(Sample_data,"3","Stichprobe des Zusatzdatensatzes",table_format=FALSE,table_format_de_flag = FALSE)
+```
+Hier sind die Datentypen der Merkmale im Datensatz:
+ 
+```{r a1a datenimport zusatzdatensatz merkmale datentyp}
+Claim_data %>%
+  summarise(across(everything(), ~ class(.x)[1])) %>%
+  pivot_longer(
+    cols = everything(),
+    names_to = "Variable",
+    values_to = "Datentyp"
+  ) %>%
+  table_visualize(
+    tbl_no = "4",
+    title = "Datentypen der Merkmale im Hauptdatensatz",table_format=FALSE,table_format_de_flag = FALSE
+  )
+```
+## b) Fehlende Werte & Plausibilitäten
+ <div class="exercise_part" nummer="A1.b)" text="Fehlende Werte & Plausibilitäten" >
+ Erstellen Sie sowohl für den Hauptdatensatz als auch für den Zusatzdatensatz
+eine übersichtliche Darstellung der fehlenden Werte je Merkmal. Geben Sie hierfür jeweils
+sowohl die absolute Anzahl als auch den prozentualen Anteil fehlender Werte pro Merkmal aus. Visualisieren
+Sie die Verteilung der fehlenden Werte zusätzlich in geeigneter Form, um zu prüfen, ob fehlende
+Werte gehäuft bei einzelnen Einträgen der Datensätze auftreten. Finden Sie außerdem mindestens drei
+unterschiedliche fachliche Inkonsistenzen/Implausibilitäten, wobei diese wahlweise im Hauptdatensatz, im
+Zusatzdatensatz oder in beiden Datensätzen untersucht werden können. Schlagen Sie für jede gefundene
+Inkonsistenz/Implausibilität eine sinnige Handlungsoption vor, führen Sie diese jedoch nicht durch.
+ </div>
+ 
+### Lösung:
+
+#### Fehlende Werte im Hauptdatensatz
+
+Einen ersten Überblick über die einzelnen Merkmale  und Information über fehlenden Werten gibt die Funktion *summary()*:
+
+```{r a1b fehlende werte hauptdatensatz summary}
+summary(Insurance_data)
+```
+Im Folgenden werden die fehlenden Werte wie gefordert dargestellt.
+
+```{r a1b fehlende werte hauptdatensatz prozente}
+Missing_stat<-missing_data_statistics(Insurance_data)
+table_visualize(Missing_stat,"5","Der Hauptdatensatz -Fehlende Werte Auswertung pro Merkmal",table_format=TRUE,table_format_de_flag = FALSE)
+
+```
+
+Die Spalte `Date_lapse` stellt das Stornodatum dar. Fehlende Werte in dieser Spalte sind daher plausibel, da die meisten Verträge nicht gekündigt werden.
+
+In diesem Schritt visualisieren wir die fehlenden Werte im Hauptdatensatz. Dafür wird die Funktion `missmap()` auf diejenigen Merkmale angewendet, bei denen mindestens ein Wert fehlt. Die Liste dieser Merkmale ist in `Missing_variables` gespeichert. Dadurch wird grafisch dargestellt, in welchen Variablen und Beobachtungen fehlende Werte auftreten.
+
+```{r a1b fehlende werte hauptdatensatz fehlende werte missmap}
+Missing_variables<-unlist(Missing_stat[Missing_stat$Missing_counts>0,c("Variable")])
+missmap(Insurance_data[Missing_variables])
+```
+
+Es wird geprüft, ob bei Beobachtungen mit fehlendem Wert in `Type_of_fuel` gleichzeitig auch der Wert der Variable `Length` fehlt. Dafür verwenden wir die Funktion `md.pattern()` aus dem Paket `mice`. Diese Funktion zeigt Muster fehlender Werte im Datensatz und ermöglicht es zu erkennen, ob bestimmte Variablen gemeinsam fehlende Werte aufweisen.
+
+```{r a1b fehlende werte hauptdatensatz kombinationen}
+md.pattern(Insurance_data[Missing_variables], plot=TRUE,rotate.names = TRUE)
+
+```
+Die Analyse mit `md.pattern()` zeigt, dass fehlende Werte in `Type_of_fuel` immer gemeinsam mit fehlenden Werten in `Length` auftreten. Wenn also `Type_of_fuel` fehlt, fehlt in diesen Beobachtungen auch `Length`; umgekehrt gilt dies jedoch nicht zwingend.
+
+Da `Length` zu den Fahrzeugdaten gehört, stellt sich die Frage, ob bei fehlendem Wert in `Type_fuel` auch alle übrigen Fahrzeugdaten im weiteren Sinne fehlen bzw. ob numerische Merkmale in diesen Fällen stets den Wert `0` oder einen Dummy-Wert wie `-1`, `99` o. Ä. annehmen. Zu diesem Zweck werden die Beobachtungen, bei denen der Wert von `Type_of_fuel` fehlt, mithilfe der Funktion `summary()` näher untersucht.
+
+```{r a1b fehlende werte hauptdatensatz typ_fuel und andere variablen}
+Insurance_data_type_fuel_missing<-Insurance_data[is.na(Insurance_data$Type_fuel),]
+summary(Insurance_data_type_fuel_missing)
+```
+Die Analyse der Beobachtungen mit fehlendem Wert in `Type_fuel` zeigt, dass in allen diesen Fällen  `N_doors`  und `Power` stets gleich `0` sind. Gleichzeitig sind jedoch nicht alle fahrzeugbezogenen Merkmale fehlend oder gleich `0`: `Weight` ist in allen betroffenen Beobachtungen größer als `0`, und auch `Cylinder_capacity` weist mit einem Minimum von `49` ausschließlich positive Werte auf. Aus der tabellarischen Auswertung ergibt sich ferner, dass fehlende Werte in `Type_fuel` nur bei `Type_risk = 1`(motorbikes) und `Type_risk = 4`(agricultural vehicles) auftreten.
+
+Im nächsten Schritt prüfen wir, ob die beobachteten Zusammenhänge auch in umgekehrter Richtung gelten. Konkret wird untersucht, ob bei allen Beobachtungen mit `N_doors = 0` auch `Type_fuel` fehlt und ob bei allen Beobachtungen mit `Power = 0` ebenfalls `Type_fuel` fehlt. Zu diesem Zweck wird für jede Kategorie von `Type_fuel` das Minimum von `Power` berechnet. Außerdem wird die Verteilung von `Type_fuel` innerhalb der einzelnen Kategorien von `N_doors` visualisiert.
+
+Für `Length` wurde bereits festgestellt, dass die Umkehrung nicht gilt: Es gibt Beobachtungen, bei denen `Length` fehlt, während `Type_fuel` nicht fehlt.
+
+##### Visualisierung {.tabset}
+```{r a1b fehlende werte power n_doors vs type_fuel, results='asis', echo=FALSE}
+ 
+cat('\n######', "Power", '\n')
+res<-Insurance_data %>%
+  group_by(Type_fuel) %>%
+  summarize(min_power = min(Power,na.rm = TRUE))
+table_visualize(res,"6","Min(Power) pro Type_fuel Kategorie",table_format=FALSE,table_format_de_flag = FALSE)   
+ cat('\n')
+ cat('\n######',"N_doors", '\n')
+# Standard Stacked Bar Chart (Absolute Counts)
+ggplot(Insurance_data, aes(x =N_doors, fill =Type_fuel)) + 
+  geom_bar(position = "stack") + 
+  labs(title = " Type_fuel vs. N_doors", x = "N_doors", y = "Type_fuel")
+ cat('\n')
+```
+
+##### Zusammenfassung
+
+Zusammenfassend wurde festgestellt, dass `Type_fuel` genau dann fehlt, wenn `Power = 0` ist. Dies kann auf zwei Arten interpretiert werden: Entweder handelt es sich bei diesen Beobachtungen um Fahrzeuge ohne klassischen Motor, zum Beispiel Anhänger, sodass `Type_fuel = NA` und `Power = 0` inhaltlich plausible Werte wären. Oder aber `Power = 0` stellt, ebenso wie `Type_fuel = NA`, einen fehlenden bzw. nicht korrekt erfassten Wert dar. Dabei ist zu beachten, dass `Type_fuel = NA` entweder tatsächlich fehlend oder für bestimmte Fahrzeuge, etwa Elektrofahrzeuge, nicht sinnvoll definiert sein könnte.
+
+Da jedoch im gesamten Datensatz beispielsweise `Cylinder_capacity` stets positive Werte aufweist, mit `min(Cylinder_capacity) = 49 > 0`, erscheint die Annahme, dass der Datensatz Anhänger enthält, weniger plausibel. Dafür spricht auch die Bezeichnung des Datensatzes als „Motor vehicle insurance data“. Daher ist abschließend davon auszugehen, dass `Power = 0` in diesen Fällen ebenfalls als fehlender bzw. implausibler Wert zu interpretieren ist.
+
+
+#### Fehlende Werte im Zusatzdatensatz
+
+Zunächst wird mithilfe der Funktion `summary()` ein erster Überblick über den Zusatzdatensatz gewonnen.
+```{r a1b fehlende werte zusatzdatensatz summary}
+summary(Claim_data)
+```
+
+Die erste Betrachtung deutet darauf hin, dass im Zusatzdatensatz keine fehlenden Werte vorhanden sind. Im nächsten Schritt wird dies überprüft, indem die fehlenden Werte wie gefordert dargestellt werden.
+
+```{r a1b fehlende werte zusatzdatensatz fehlende werte prozente }
+Missing_stat<-missing_data_statistics(Claim_data)
+table_visualize(Missing_stat,"7","Der Zusatzdatensatz -Fehlende Werte: Auswertung pro Merkmal",table_format=TRUE,table_format_de_flag = FALSE)
+
+```
+Die Darstellung bestätigt, dass der Zusatzdatensatz keine fehlenden Werte enthält.
+
+#### Mindestens 3 fachliche Inkosistenzen/Implausibilitäten 
+
+Im nächsten Schritt werden verschiedene Plausibilitätsprüfungen durchgeführt, um fachliche Inkonsistenzen und Implausibilitäten in den Daten zu identifizieren. Dabei werden sowohl der Hauptdatensatz als auch der Zusatzdatensatz betrachtet. Ziel ist es, mindestens drei unterschiedliche Auffälligkeiten zu finden, diese fachlich zu interpretieren und jeweils eine sinnvolle Handlungsoption vorzuschlagen. Die vorgeschlagenen Maßnahmen werden jedoch entsprechend der Aufgabenstellung nicht direkt umgesetzt.
+
+**1. Implausibilität:`Power=0`** 
+
+Wie bereits in der obigen Analyse festgestellt, scheint `Power = 0` mindestens für `Type_risk = 1` (motorbikes) implausibel bzw. inkorrekt zu sein. Eine mögliche Handlungsoption wäre, die betroffenen Beobachtungen zu entfernen. Dies beträfe 1.764 von insgesamt 105.555 Beobachtungen und damit etwa 1,7 % des Datensatzes.
+
+Alternativ könnte `Power` durch einen plausiblen Ersatzwert imputiert werden, zum Beispiel durch den Mittelwert der Motorleistung ähnlicher Fahrzeuge. Die Ähnlichkeit könnte dabei entweder über ein Clustering auf Basis der Fahrzeugdaten oder vereinfacht über die Variable `Type_risk` bestimmt werden.
+
+**2. Wichtige Auffälligkeit: Beobachtungen mit `Date_lapse <= Date_last_renewal`**
+
+Zusätzlich wurde festgestellt, dass `Date_lapse` in bestimmten Fällen mit `Date_last_renewal` übereinstimmt oder sogar vor `Date_last_renewal` liegt. Dies ist fachlich auffällig, da das Kündigungs- bzw. Ablaufdatum grundsätzlich nicht vor Beginn der aktuellen Vertragsperiode liegen sollte. Besonders deutlich wurde diese Auffälligkeit bei der Bearbeitung der Aufgaben A2 und A4, insbesondere im Zusammenhang mit der Berechnung der `Exposure`.
+
+Zunächst werden die betroffenen Beobachtungen identifiziert:
+
+```{r a1b non_positive_exposure 1}
+exposure_non_positive<- Insurance_data %>%
+                   filter(!is.na(Date_lapse) & Date_lapse<=Date_last_renewal) %>%
+                   select(ID,Date_last_renewal,Date_lapse,Date_next_renewal,Lapse,Type_risk,Policies_in_force)
+```
+
+Im Folgenden werden beispielhaft einige besonders auffällige Beobachtungen angezeigt, bei denen `Date_lapse < Date_last_renewal` gilt:
+
+```{r a1b non_positive_exposure 2}
+table_visualize(head(exposure_non_positive%>%filter(Date_lapse<Date_last_renewal)),"8","Beispiele für Beobachtungen mit nicht-positiver Exposure",table_format=FALSE,table_format_de_flag = FALSE)
+```
+
+Von insgesamt `r integer_format(dim(Insurance_data)[1])` Beobachtungen im Hauptdatensatz sind `r integer_format(dim(exposure_non_positive)[1])` von dieser Auffälligkeit betroffen. Dies entspricht einem Anteil von `r pct_format(dim(exposure_non_positive)[1]/dim(Insurance_data)[1])`.
+
+Da der Anteil relativ hoch ist, erscheint eine Interpretation als reiner Erfassungsfehler eher unwahrscheinlich. Eine mögliche Erklärung ist, dass die Beschreibung der Spalte `Date_lapse`anders zu verstehen ist: `Date_lapse` könnte nicht zwingend das Stornodatum des **betrachteten** Vertrags darstellen, sondern möglicherweise das Stornodatum **des letzten vom Kunden stornierten Vertrags**. Dieses Datum kann dann auch vor der aktuell betrachteten Vertragsperiode liegen.
+
+**Handlungsoptionen**
+
+Es ergeben sich zwei mögliche Handlungsoptionen:
+
+1. Berücksichtigung von `Date_lapse` nur innerhalb der aktuellen Vertragsperiode
+
+Bei der Berechnung der `Exposure` sollte `Date_lapse` nur dann als Vertragsende verwendet werden, wenn das Datum innerhalb der aktuellen Vertragsperiode liegt, also wenn gilt: `Date_last_renewal<=Date_lapse<=Date_next_renewal`.
+
+Dies wurde in Aufgabe A2 umgesetzt, indem das tatsächliche Vertragsende `End_date` wie folgt definiert wurde:
+
+`End_date = case_when(!is.na(Date_lapse) &Date_lapse >= Date_last_renewal`
+`&Date_lapse <= Date_next_renewal ~ Date_lapse,TRUE ~ Date_next_renewal)`
+
+2. Entfernung der betroffenen Beobachtungen für den finalen Modellierungsdatensatz
+
+Für Aufgabe A4 c) ist es notwendig, die betroffenen Beobachtungen zu entfernen, um die geforderte Anzahl von `15.874` Zeilen im Ergebnisdatensatz zu erhalten.
+
+Im Hauptdatensatz gibt es `r integer_format(dim(Insurance_data%>%filter(Type_risk=="3" & year(Date_last_renewal)==2016 & Policies_in_force ==1))[1])` Beobachtungen mit den Bedingungen:`Type_risk=3`,`year(Date_last_renewal)=2016`  und `Policies_in_force ==1`. 
+Davon weisen `r integer_format(dim(exposure_non_positive%>%filter(Type_risk=="3" & year(Date_last_renewal)==2016 & Policies_in_force ==1))[1])` Beobachtungen die Auffälligkeit `Date_lapse <= Date_last_renewal` auf. Die Differenz beträgt `r integer_format(dim(Insurance_data%>%filter(Type_risk=="3" & year(Date_last_renewal)==2016 & Policies_in_force ==1))[1]-dim(exposure_non_positive%>%filter(Type_risk=="3" & year(Date_last_renewal)==2016 & Policies_in_force ==1))[1])` Beobachtungen und entspricht damit der geforderten Anzahl der Beobachtungen im finalen Modellierungsdatensatz.
+
+**3. Implausibilität: `Max_policies < Policies_in_force`**
+
+Laut Variablenbeschreibung bezeichnet `Max_policies` die maximale Anzahl an Policen, die ein Kunde gleichzeitig beim Versicherungsunternehmen hatte. `Policies_in_force` beschreibt die Anzahl der laufenden Policen des Kunden im betrachteten Zeitraum.
+
+Daraus ergibt sich die fachliche Erwartung, dass `Policies_in_force` höchstens so groß wie `Max_policies` sein sollte, also:
+
+`Policies_in_force <= Max_policies`
+
+Im nächsten Schritt wird geprüft, ob es Beobachtungen gibt, bei denen diese Bedingung verletzt ist, also Fälle mit `Policies_in_force > Max_policies`.
+
+```{r a1b plausibilitaeten max_policies vs policies_in_force}
+Insurance_data %>%
+  filter(Max_policies<Policies_in_force) %>%
+  select(c("ID","Date_last_renewal","Max_policies","Policies_in_force"))
+```
+Da nur 16 Beobachtungen betroffen sind, wäre eine mögliche Handlungsoption, diese Beobachtungen aus dem Datensatz zu entfernen.
+
+Alternativ könnte eine Korrektur vorgenommen werden, indem `Policies_in_force` auf den Wert von `Max_policies` begrenzt wird, also beispielsweise durch:
+
+`Policies_in_force = pmin(Policies_in_force, Max_policies)`
+
+Auch dies wäre eine mögliche Handlungsoption, da dadurch die fachliche Bedingung `Policies_in_force <= Max_policies` wiederhergestellt würde.
+
+**4. Implausibilität: Die Mehrzahl der Policen mit Schaden ist im Zusatzdatensatz nicht vorhanden**
+
+Im nächsten Schritt wird geprüft, ob alle Policen mit mindestens einem Schaden im Hauptdatensatz auch im Zusatzdatensatz enthalten sind. Dazu werden zunächst alle IDs aus dem Hauptdatensatz betrachtet, für die `N_claims_year > 0` gilt. Anschließend wird überprüft, wie viele dieser IDs auch im Zusatzdatensatz vorkommen.
+
+Zusätzlich wird geprüft, ob es umgekehrt Policen im Zusatzdatensatz gibt, deren IDs im Hauptdatensatz nicht vorkommen.
+
+Die Erwartung wäre, dass Policen mit mindestens einem Schaden grundsätzlich auch im Zusatzdatensatz erfasst sind, da dieser nähere Informationen zu den Schadenkosten nach Schadenart enthält. Ebenso wäre zu erwarten, dass alle im Zusatzdatensatz enthaltenen IDs auch im Hauptdatensatz vorhanden sind.
+
+```{r a1b plausibilitaeten inkonsistenz check hauptdatensatz vs zusatzdatensatz}
+# Eindeutige IDs in dem Hauptdatensatz die mindestens einen Schaden in Vertragslaufzeit haben
+IDs_insurance_with_claims <- Insurance_data %>% 
+                  filter (N_claims_year>0) %>% #Mit Cost_claims_year>0 bekommt man identisches Ergebnis
+                  distinct(ID)
+#eindeutige IDs im Zusatzdatensatz Claim_data
+IDs_claim <- Claim_data %>% distinct(ID)
+
+# Anzahl eindeutiger IDs mit Schäden je Datensatz
+Total_insurance <- nrow(IDs_insurance_with_claims)
+Total_claim     <- nrow(IDs_claim)
+
+# IDs nur in Insurance_data
+Only_insurance <- anti_join(IDs_insurance_with_claims, IDs_claim,  by=c("ID" = "ID")) %>%
+  summarise(Anzahl_IDs_fehlend_im_anderen_Datensatz = n()) %>%
+  mutate(
+    Datensatz= "Hauptdatensatz",
+    Anzahl_IDs_mit_Schaden = Total_insurance
+  )  %>%
+select(Datensatz,Anzahl_IDs_mit_Schaden, Anzahl_IDs_fehlend_im_anderen_Datensatz)
+# IDs nur in Claim_data
+Only_claim <- anti_join(IDs_claim,IDs_insurance_with_claims,  by=c("ID" = "ID")) %>%
+  summarise(Anzahl_IDs_fehlend_im_anderen_Datensatz= n()) %>%
+  mutate(
+    Datensatz = "Zusatzdatensatz",
+    Anzahl_IDs_mit_Schaden = Total_claim
+  )  %>%
+select(Datensatz,Anzahl_IDs_mit_Schaden, Anzahl_IDs_fehlend_im_anderen_Datensatz)
+
+
+# Zusammenfassung der Ergebnisse in einer Data Frame
+ID_comparison_main_claim<- bind_rows(Only_insurance, Only_claim)
+
+table_visualize(ID_comparison_main_claim,"9","Vergleich der IDs zwischen Hauptdatensatz und den Zusatzdatensatz",table_format=TRUE,table_format_de_flag = FALSE)
+```
+Der Hauptdatensatz enthält `r integer_format(Total_insurance)` unterschiedliche IDs mit mindestens einem Schaden. Im Zusatzdatensatz sind dagegen nur `r integer_format(Total_claim)` unterschiedliche IDs enthalten. Dabei sind alle IDs aus dem Zusatzdatensatz auch im Hauptdatensatz vorhanden.
+
+Damit liegt für nur `r pct_format(Total_claim / Total_insurance)` der Policen mit Schaden eine zusätzliche Information im Zusatzdatensatz vor. Diese Auswertung basiert auf IDs und nicht auf der Ebene einzelner Schäden.
+
+Auch im Artikel, in dem die Datensätze bereitgestellt wurden, wird darauf hingewiesen, dass der Zusatzdatensatz nur eine Stichprobe der Schäden enthält. Dort heißt es, dass diese Information etwa **15 %** der Schäden abbildet (Quelle: https://doi.org/10.1007/s13385-024-00398-0, Sektion 4). Damit wird bestätigt, dass im Zusatzdatensatz nur ein Teil der Schäden aus dem Hauptdatensatz enthalten ist.
+
+Wenn eine Analyse auf Ebene einzelner Schäden oder eine Analyse nach Schadenart in Verbindung mit den Policendaten durchgeführt werden soll, sollten die beiden Datensätze verknüpft werden. Dabei sollten nur die IDs verwendet werden, die im Zusatzdatensatz vorhanden sind. Für Analysen, die keine Informationen zur Schadenart benötigen, kann dagegen ausschließlich der Hauptdatensatz verwendet werden.
+
+Im Folgenden werden ergänzend weitere Inkonsistenzen bzw. Implausibilitäten genannt, die erst im Verlauf der Bearbeitung der weiteren Aufgaben aufgefallen sind. Diese werden jedoch nicht im Detail validiert, und es werden keine separaten Handlungsoptionen vorgeschlagen, da in der Aufgabenstellung lediglich mindestens drei Inkonsistenzen bzw. Implausibilitäten gefordert sind.
+
+5. **Inkonsistenz: `Date_lapse` vorhanden, obwohl `Lapse = 0`**
+
+   Eine weitere Auffälligkeit besteht darin, dass es Beobachtungen gibt, bei denen `Date_lapse` vorhanden ist, obwohl `Lapse = 0` gilt. Wenn `Lapse = 0` bedeutet, dass keine Kündigung bzw. kein Vertragsablauf vorliegt, wäre zu erwarten, dass `Date_lapse` in diesen Fällen fehlt.
+
+
+6. **Inkonsistenz zwischen Datenbeschreibung und Zusatzdatensatz**
+
+   Eine weitere Inkonsistenz betrifft die Beschreibung des Zusatzdatensatzes. Laut Datenbeschreibung könnte man erwarten, dass der Zusatzdatensatz aggregierte Schadenkosten nach Schadenart und Police(ID) enthält. In der Beschreibung der Variablen wird `Cost_claims_by_type` nämlich als „**Total cost** of claim**s** by type for the insurance policy during the current year“ beschrieben. Tatsächlich treten jedoch mehrere Zeilen mit derselben `Claims_type` pro `ID` auf.
+
+   Dies deutet darauf hin, dass es sich eher um einen Einzelschadendatensatz handelt und nicht um eine reine Aggregation nach Schadenart und ID. Auch aus dem Paper ergibt sich, dass der Zusatzdatensatz als Stichprobe einzelner Schäden zu verstehen ist. Damit besteht eine Inkonsistenz zwischen der formalen Beschreibung des Zusatzdatensatzes und der tatsächlichen Struktur der Daten.
+   
+**These im Zusatzdatensatz:** Können die Schadenkosten pro Schadenart größer sein als die gesamten Schadenkosten einer Police, also `Cost_claims_by_type > Cost_claims_year`?
+
+Diese mögliche Inkonsistenz wird im nächsten Schritt geprüft. 
+
+```{r a1b plausibilitaeten inkonsistenz check claim_type vs total_claim}
+Claim_data %>%
+  filter(Cost_claims_by_type>Cost_claims_year)
+```
+Die Ergebnisse zeigen, dass diese Inkonsistenz im Zusatzdatensatz nicht vorliegt.
+
+**These:** Ist `N_doors = 0` im Hauptdatensatz teilweise als fehlender Wert zu interpretieren?
+
+Dass `N_doors = 0` bei `Type_risk = 1` (motorbikes) auftritt, ist durchaus plausibel, da Motorräder keine Türen haben. Es stellt sich jedoch die Frage, ob es auch Beobachtungen mit `Type_risk = 2` (vans) oder `Type_risk = 3` (passenger cars) gibt, für die `N_doors = 0` gilt. In diesen Fällen wäre `N_doors = 0` eher als fehlender bzw. implausibler Wert zu interpretieren.
+
+Dies prüfen wir, indem wir die Verteilung von `N_doors` innerhalb der einzelnen Kategorien von `Type_risk` visualisieren.
+
+```{r a1b plausibilitaeten hauptdatensatz fehlende werte n_doors type_risk}
+
+ggplot(Insurance_data, aes(x = Type_risk, fill = N_doors)) +
+  geom_bar(position = "fill") + # Scales bars to 1.0 (100%)
+  scale_y_continuous(labels = scales::percent) + # Formats Y-axis as %
+  scale_fill_manual(values = Palette6) +
+  labs(y = "Prozentuale Verteilung", x = "Type_risk", fill = "N_doors")
+
+```
+Die Grafik zeigt, dass `N_doors = 0` vor allem bei `Type_risk = 1` und `Type_risk = 4` auftritt. Für `Type_risk = 1` (motorbikes) ist dies fachlich plausibel, da Motorräder keine Türen besitzen.
+
+Bei `Type_risk = 2` (vans) und `Type_risk = 3` (passenger cars) tritt `N_doors = 0` dagegen nicht . Damit gibt es keine Hinweise darauf, dass `N_doors` bei Vans oder Pkw als fehlender oder implausibler Wert auftritt.
+
+Auffällig ist jedoch, dass bei `Type_risk = 4` (agricultural vehicles) ebenfalls ein sehr hoher Anteil der Beobachtungen `N_doors = 0` aufweist. Dies könnte fachlich plausibel sein, wenn es sich um bestimmte landwirtschaftliche Fahrzeuge ohne Türen handelt. Insgesamt spricht die Grafik daher eher dafür, dass `N_doors = 0` in den meisten Fällen eine inhaltlich sinnvolle Ausprägung darstellt und nicht als fehlender Wert behandelt werden sollte.
+
+## c) Univariate Verteilungen
+ <div class="exercise_part" nummer="A1.c)" text="Univariate Verteilungen" >
+Erzeugen Sie für den Hauptdatensatz für alle numerischen und kategorialen Merkmale geeignete Verteilungsdarstellungen. Verwenden Sie hierfür je nach Skalenniveau und Wertecharakter
+z. B. Dichteschätzungen, Histogramme oder Balkendiagramme. Erzeugen Sie außerdem für die
+numerischen Merkmale Premium, Weight und Value_vehicle jeweils Raincloud-Plots, in denen die Verteilungen
+nach den Ausprägungen des Merkmals Type_risk aufgeschlüsselt dargestellt sind. Interpretieren
+Sie die Ergebnisse und stellen Sie Bezüge zu den (aggregierten) Verteilungsdarstellungen vom Beginn der
+Teilaufgabe sowie zu den späteren Analysen und Modellierungen her.
+ </div>
+ 
+### Lösung:
+
+```{r a1c variablen listen nach typ}
+Date_vars<-names(Insurance_data)[sapply(Insurance_data, is.Date)]
+Double_vars<-setdiff(names(Insurance_data)[sapply(Insurance_data, is.double)],Date_vars)
+Integer_vars<-names(Insurance_data)[sapply(Insurance_data, is.integer)]
+Numerical_vars<-c(Double_vars,Integer_vars)
+Categorical_vars<-names(Insurance_data)[sapply(Insurance_data, is.factor)]
+Categorical_vars_without_ID<- Categorical_vars[!toupper(Categorical_vars)=="ID"]
+Raincloud_vars <- c("Premium", "Weight", "Value_vehicle")
+
+```
+
+#### ID-Merkmal
+
+Das Merkmal `ID` ist eine interne Identifikationsnummer und enthält für sich genommen keine inhaltlich relevante Information. Daher wird es hier nicht als „standardmäßiges“ kategoriales Merkmal betrachtet.
+
+Da eine `ID` mehrmals vorkommen kann, wird im Folgenden lediglich die Häufigkeit der einzelnen IDs untersucht bzw. dargestellt.
+
+
+
+```{r a1c id haeufigkeit}
+ # Spezielle Tabelle für ID
+  ID_tab<-Insurance_data %>% 
+  count(ID,name="Haeufigkeit") %>%
+  arrange(desc(Haeufigkeit)) %>%
+  count(Haeufigkeit,name="Anzahl IDs")
+table_visualize(ID_tab,"10","Häufigkeit bei IDs",table_format=TRUE,table_format_de_flag = FALSE)
+
+```
+
+
+#### Kategoriale Merkmale ohne ID {.tabset}
+Kategorielle Merkmale(ohne ID) sind `r Categorical_vars_without_ID`.
+
+
+```{r a1c verteilung kategoriale merkmale,echo=FALSE, results='asis'}
+for (Var_name in Categorical_vars_without_ID) {
+  cat('\n#####', Var_name, '\n')
+  
+  p <- ggplot(
+    Insurance_data,
+    aes(
+      x = reorder(.data[[Var_name]], .data[[Var_name]], function(x) -length(x)),
+      y = after_stat(count / sum(count)),
+      fill = .data[[Var_name]]
+    )
+  ) + 
+    geom_bar() +
+    
+    geom_text(
+      stat = "count",
+      aes(
+        label = sprintf(
+          "%.2f%%",
+          after_stat(count / sum(count)) * 100
+        )
+      ),
+      vjust = -0.2,
+      size = 3
+    ) +
+    
+    scale_y_continuous(
+      labels = function(x) sprintf("%.2f%%", x * 100),
+      expand = expansion(mult = c(0, 0.1))
+    ) +
+    
+    scale_fill_manual(values = Palette6) +
+    
+    labs(
+      title = paste("Verteilung von:", Var_name),
+      x = Var_name,
+      y = "%"
+    ) +
+    
+    theme_minimal() +
+    theme(
+      legend.position = "none",
+      axis.text.x = element_text(angle = 45, hjust = 1)
+    )
+  
+  print(p)
+  cat('\n')
+}
+```
+
+#### Zusammenfassung
+
+Die  Grafiken zeigen die prozentuale Verteilung dieser Merkmale im Hauptdatensatz. Dabei ist erkennbar, dass einige Variablen relativ unausgewogen verteilt sind. Beispielsweise dominiert bei `Type_risk` die Kategorie `3`(passager cars) deutlich mit etwa 78,6 %. Auch bei `Area` überwiegt Kategorie `0`(rural) mit etwa 73 %, und bei `Second_driver` liegt der Anteil der Kategorie `0` bei etwa 88 %.
+
+Bei `Distribution_channel` ist die Verteilung dagegen vergleichsweise ausgeglichener: Kategorie `0` macht etwa 54,9 % und Kategorie `1` etwa 45,1 % aus. Bei `Payment` überwiegt Kategorie `0`(jährliche Zahlweise) mit etwa 68 % gegenüber Kategorie `1`(halbjährliche Zahlweise) mit etwa 32 %.
+
+Für `N_doors` ist die Kategorie `5` mit etwa 60,6 % am häufigsten vertreten. Weitere relevante Kategorien sind `3` und `4` mit jeweils etwa 13,5 %. Die Kategorie `0` tritt mit etwa 8,8 % auf und wurde bereits im Rahmen der Plausibilitätsprüfung näher betrachtet.
+
+Bei `Type_fuel` überwiegt die Kategorie `D` mit etwa 61,6 %, gefolgt von `P` mit etwa 36,7 %. Fehlende Werte machen etwa 1,7 % aus und wurden ebenfalls im Zusammenhang mit den Variablen `Power`, `N_doors` und `Type_risk` genauer untersucht.
+
+
+#### Numerische Merkmale - Kontinuirlich {.tabset}
+
+Zu den numerischen Merkmalen vom Typ `double` gehören `r Double_vars`.
+
+
+```{r a1c verteilung numerische kontinuirliche merkmale,echo=FALSE, results='asis'}
+
+for (Var_name in Double_vars) {
+   cat('\n#####', Var_name, '\n')
+   if (Var_name %in% Raincloud_vars ){
+  # Links: Histogram + Density (horizontal)
+  p_left <- ggplot(Insurance_data, aes(x = .data[[Var_name]])) +
+    geom_histogram(aes(y = ..density..),
+                   bins = 20,
+                   fill = '#d1e5f0',
+                   color = "white") +
+    geom_density(color = '#b2182b', linewidth = 1) +
+    coord_flip() +  # makes it horizontal
+    scale_y_reverse() +   # this flips direction (right → left)
+    theme_minimal(base_size = 14) +
+    labs(
+      title = paste("Verteilung von:", Var_name),
+      x = NULL,
+      y = "Dichte"
+    )
+  
+  # Rechts: Raincloud plot
+  p_right <- ggplot(
+    Insurance_data,
+    aes(x = Type_risk, y = .data[[Var_name]], fill = Type_risk)
+  ) +
+    geom_rain(rain.side = 'l') +
+    theme_minimal(base_size = 14) +
+    labs(
+      title = paste("Raincloud:", Var_name),
+      x = "Type_risk",
+      y = Var_name
+    ) +
+    theme(legend.position = "none")
+  
+  # Kombiniert
+  combined_plot <- p_left + p_right +
+    plot_layout(ncol = 2, widths = c(1, 1))
+  
+  print(combined_plot)
+  }
+  else {
+      #Histogram + Density (horizontal)
+  p <- ggplot(Insurance_data, aes(x = .data[[Var_name]])) +
+    geom_histogram(aes(y = ..density..),
+                   bins = 20,
+                   fill = '#d1e5f0',
+                   color = "white") +
+    geom_density(color = '#b2182b', linewidth = 1) +
+    theme_minimal(base_size = 14) +
+    labs(
+      title = paste("Verteilung von:", Var_name),
+      x = NULL,
+      y = "Dichte"
+    )
+  print(p)
+  }
+  cat('\n')
+}
+```
+
+#### Zusammenfassung
+
+Die  Grafiken zeigen die Verteilungen dieser Merkmale im Hauptdatensatz. Insgesamt ist zu erkennen, dass mehrere Variablen deutlich rechtsschief verteilt sind und einzelne sehr hohe Werte aufweisen. Dies betrifft insbesondere `Cost_claims_year`, `R_Claims_history`, `Value_vehicle` und `Weight`.
+
+Bei `Premium` zeigt sich ebenfalls eine rechtsschiefe Verteilung. Die meisten Werte liegen im unteren bis mittleren Bereich, während einige wenige Beobachtungen deutlich höhere Prämien aufweisen. Die Raincloud-Darstellung nach `Type_risk` zeigt zudem, dass sich die Prämien zwischen den Risikotypen unterscheiden.
+
+`Cost_claims_year` ist stark durch den Wert `0` geprägt, da viele Policen im betrachteten Jahr keinen Schaden aufweisen. Gleichzeitig gibt es einzelne sehr hohe Schadenkosten, wodurch die Verteilung stark rechtsschief ist.
+
+Auch `R_Claims_history` ist stark rechtsschief verteilt. Viele Beobachtungen weisen niedrige Werte auf, während einzelne Policen eine deutlich höhere Schadenhistorie haben.
+
+Die fahrzeugbezogenen Variablen `Power`, `Cylinder_capacity`, `Value_vehicle`, `Length` und `Weight` zeigen unterschiedliche Verteilungsmuster. Bei `Power` und `Cylinder_capacity` sind Häufungen in bestimmten Wertebereichen erkennbar, was auf typische technische Fahrzeugklassen hindeutet. `Length` ist vergleichsweise konzentriert um typische Fahrzeuglängen, weist aber ebenfalls einzelne hohe Werte auf. Bei `Value_vehicle` und `Weight` sind deutliche Unterschiede zwischen den Kategorien von `Type_risk` sichtbar, insbesondere in den Raincloud-Darstellungen.
+
+Die Raincloud-Darstellungen zeigen die Verteilung ausgewählter numerischer Merkmale differenziert nach `Type_risk`. Dadurch lassen sich Unterschiede zwischen den Risikotypen besser erkennen als in der Gesamtdichte allein.
+
+Bei `Premium` zeigt sich, dass `Type_risk = 4` insgesamt die niedrigsten Prämien aufweist. Die Werte liegen hier relativ konzentriert in einem niedrigen Bereich. Für `Type_risk = 1` sind die Prämien ebenfalls eher niedrig bis moderat, allerdings mit einzelnen höheren Ausreißern. Deutlich höhere und stärker streuende Prämien zeigen sich bei `Type_risk = 2` und insbesondere bei `Type_risk = 3`. Bei `Type_risk = 3` treten zudem die höchsten Ausreißer auf, mit Prämien bis nahe 3.000. Dies deutet darauf hin, dass sich die Prämienhöhe stark nach Fahrzeug- bzw. Risikotyp unterscheidet.
+
+Bei `Value_vehicle` sind ebenfalls deutliche Unterschiede zwischen den Risikotypen sichtbar. `Type_risk = 1` weist überwiegend niedrige Fahrzeugwerte auf, was fachlich plausibel ist, da es sich hierbei um Motorräder handelt. `Type_risk = 2` und `Type_risk = 3` liegen im mittleren Bereich, wobei `Type_risk = 3` eine besonders große Streuung und sehr hohe Ausreißer zeigt. `Type_risk = 4` weist tendenziell höhere Werte als `Type_risk = 1` auf, aber ebenfalls eine breite Streuung. Insgesamt zeigt die Darstellung, dass `Value_vehicle` stark vom Risikotyp abhängt und insbesondere bei `Type_risk = 3` sehr heterogen ist.
+
+Bei `Weight` unterscheidet sich `Type_risk = 1` klar von den übrigen Kategorien. Die Gewichte liegen hier überwiegend in einem sehr niedrigen Bereich, was wiederum zu Motorrädern passt. `Type_risk = 2` und `Type_risk = 3` weisen deutlich höhere Gewichte auf und liegen relativ konzentriert in typischen Fahrzeugbereichen. `Type_risk = 4` zeigt die größte Streuung und enthält sehr hohe Ausreißer, was fachlich plausibel sein kann, da es sich um landwirtschaftliche Fahrzeuge handelt. Die Raincloud-Darstellung zeigt somit, dass `Weight` sehr stark zwischen den Fahrzeugarten variiert.
+
+Zusammenfassend zeigen die Raincloud-Plots, dass `Type_risk` einen deutlichen Zusammenhang mit den fahrzeugbezogenen Merkmalen und der Prämienhöhe aufweist. Besonders `Type_risk = 1` und `Type_risk = 4` unterscheiden sich klar von den übrigen Kategorien. Außerdem sind bei mehreren Variablen deutliche Ausreißer erkennbar, insbesondere bei `Premium`, `Value_vehicle` und `Weight`.
+
+#### Numerische Merkmale - Diskret {.tabset}
+
+Zu den diskreten numersichen Merkmalen gehören `Seniority`, `Policies_in_force`, `Max_policies`, `Max_products`, `Lapse`, `N_claims_year`, `N_claims_history` und `Year_matriculation`.
+
+
+```{r a1c verteilung numerische diskrete merkmale,echo=FALSE, results='asis'}
+
+for (Var_name in Integer_vars) {
+  cat('\n#####', Var_name, '\n')
+    p <- ggplot(Insurance_data, aes(x = .data[[Var_name]])) +
+      geom_histogram(
+        binwidth = 1,  
+        fill = Palette6[1],
+        color = "white"
+      ) +
+      theme_minimal(base_size = 14) +
+      labs(
+        title = paste("Verteilung von:", Var_name),
+        x = Var_name,
+        y = "Häufigkeit"
+      )
+    print(p)
+  cat('\n')
+}
+
+```
+
+#### Zusammenfassung
+
+Die Verteilung von `Seniority`, also der Dauer der Kundenbeziehung zum Versicherungsunternehmen, ist deutlich rechtsschief: Die meisten Versicherungsnehmer sind erst seit wenigen Jahren Kunden des Unternehmens. Mit zunehmender Kundendauer nimmt die Häufigkeit deutlich ab. Einzelne Beobachtungen weisen jedoch eine sehr lange Kundenbeziehung von über 30 Jahren auf.
+
+Bei `Policies_in_force` zeigt sich, dass die meisten Kunden nur eine laufende Police besitzen. Zwei Policen kommen ebenfalls noch relativ häufig vor, während höhere Werte deutlich seltener sind. Die Verteilung ist somit stark auf kleine Werte konzentriert.
+
+Ein ähnliches Muster zeigt sich bei `Max_policies`. Auch hier liegen die meisten Beobachtungen bei wenigen Policen, insbesondere bei einem oder zwei Verträgen. Höhere maximale Policenzahlen treten nur selten auf. Dies passt grundsätzlich zur Verteilung von `Policies_in_force`.
+
+`Max_products` ist sehr stark auf den Wert `1` konzentriert. Nur ein kleiner Teil der Beobachtungen weist mehr als ein Produkt auf. Dies deutet darauf hin, dass die meisten Kunden im betrachteten Zeitraum nur ein Versicherungsprodukt beim Unternehmen hatten.
+
+Die Variable `Lapse` ist ebenfalls stark auf den Wert `0` konzentriert. Das bedeutet, dass in der Mehrheit der Beobachtungen kein Storno vorliegt. Werte größer als `0` kommen deutlich seltener vor.
+
+Bei `N_claims_year` ist erkennbar, dass die meisten Policen im betrachteten Jahr keinen Schaden aufweisen. Werte größer als `0` treten deutlich seltener auf, und hohe Schadenanzahlen sind Ausnahmefälle. Die Verteilung ist daher stark rechtsschief.
+
+Auch `N_claims_history` ist rechtsschief verteilt. Viele Beobachtungen haben keine oder nur wenige historische Schäden, während hohe Werte selten sind. Im Vergleich zu `N_claims_year` ist die Verteilung breiter, da hier die Schadenhistorie über einen längeren Zeitraum abgebildet wird.
+
+`Year_matriculation` zeigt, dass die meisten Fahrzeuge ungefähr zwischen 2000 und 2010 zugelassen wurden. Ältere Fahrzeuge kommen vor, sind aber deutlich seltener.
+
+#### Schadenrelevante  Merkmale  {.tabset}
+
+Wie oben bereits gezeigt, nehmen die schadenrelevanten Merkmale `Cost_claims_year`, `R_Claims_history`, `N_claims_year` und `N_claims_history` für die Mehrheit der Beobachtungen den Wert `0` an. Dies ist fachlich plausibel, da viele Policen im betrachteten Zeitraum keinen Schaden aufweisen.
+
+Um die Verteilung der positiven Schadenwerte besser beurteilen zu können, werden im Folgenden bedingte Verteilungen betrachtet. Dabei werden jeweils nur Beobachtungen berücksichtigt, bei denen das entsprechende Merkmal größer als `0` ist.
+
+```{r a1c verteilung schadenrelevante merkmale,echo=FALSE, results='asis'}
+Claim_integer_vars <-c("N_claims_year","N_claims_history")
+Claim_double_vars <- c("Cost_claims_year","R_Claims_history")
+for (Var_name in Claim_integer_vars) {
+  cat('\n#####', Var_name, '\n')
+    Insurance_data_subset<-Insurance_data %>%
+                          filter(.data[[Var_name]] > 0)
+    p <- ggplot(Insurance_data_subset, aes(x = .data[[Var_name]])) +
+      geom_histogram(
+        binwidth = 1,  
+        fill = Palette6[1],
+        color = "white"
+      ) +
+      theme_minimal(base_size = 14) +
+      labs(
+        title = paste("Verteilung von:", Var_name,">0"),
+        x = Var_name,
+        y = "Häufigkeit"
+      )
+    print(p)
+  cat('\n')
+}
+for (Var_name in Claim_double_vars) {
+  cat('\n#####', Var_name, '\n')
+   Insurance_data_subset<-Insurance_data %>%
+                          filter(.data[[Var_name]] > 0)
+    #Histogram + Density (horizontal)
+  p <- ggplot(Insurance_data_subset, aes(x = .data[[Var_name]])) +
+    geom_histogram(aes(y = ..density..),
+                   bins = 20,
+                   fill = '#d1e5f0',
+                   color = "white") +
+    geom_density(color = '#b2182b', linewidth = 1) +
+    theme_minimal(base_size = 14) +
+    labs(
+      title = paste("Verteilung von:", Var_name,">0"),
+      x = NULL,
+      y = "Dichte"
+    )
+  print(p)
+p <- 
+ggplot(Insurance_data_subset, aes(y = .data[[Var_name]])) +
+  geom_boxplot() +
+  labs(title = paste("Boxplot von", Var_name,">0"),
+       y = Var_name)
+  print(p)
+  p<-ggplot(Insurance_data_subset, aes(x = log1p(.data[[Var_name]]))) +
+  geom_histogram() +
+  labs(title = paste("Log-transformiertes Histogramm von", Var_name,">0"))
+  print(p)
+   cat('\n')
+  }
+ 
+  
+
+```
+
+#### Interpretation
+
+Für `Cost_claims_year > 0` ist die Verteilung  stark rechtsschief. Die meisten positiven Schadenkosten liegen im unteren Bereich, während einzelne sehr hohe Schäden auftreten. Dies wird auch im Boxplot deutlich, in dem mehrere starke Ausreißer sichtbar sind. Die log-transformierte Darstellung zeigt die Verteilung der positiven Schadenkosten differenzierter und macht erkennbar, dass die meisten Schäden in einem relativ niedrigen bis mittleren Bereich liegen, während sehr hohe Schäden selten sind.
+
+Bei `R_Claims_history > 0` ergibt sich ein ähnliches Bild. 
+
+Insgesamt zeigen die bedingten Verteilungen, dass Schadenereignisse und insbesondere hohe Schadenkosten selten auftreten. Die schadenrelevanten Merkmale sind daher stark rechtsschief verteilt und weisen teilweise deutliche Ausreißer auf.
+
+## d) Korrelations- & Assoziationsanalyse
+ <div class="exercise_part" nummer="A1.d)" text="Korrelations- & Assoziationsanalyse" >
+d)Untersuchen Sie bivariate Zusammenhänge im Hauptdatensatz
+mithilfe geeigneter Zusammenhangsmaße. Berechnen Sie für alle numerischen Merkmale eine Korrelationsmatrix
+(wählen und begründen Sie kurz das Korrelationsmaß, z. B. Pearson vs. Spearman), visualisieren Sie diese als Heatmap und identifizieren Sie starke Korrelationen. Für die kategorialen Merkmale berechnen
+Sie paarweise Cramérs V und stellen Sie die resultierenden Assoziationen ebenfalls als Heatmap
+dar. Bewerten Sie die Ergebnisse fachlich und leiten Sie kurz Implikationen für spätere Modellierungsschritte
+ab.
+ </div>
+ 
+### Lösung:
+
+#### Numerische Variablen 
+
+Als Korrelationsmaß wird die **Spearman-Rangkorrelation** verwendet. Im Gegensatz zur Pearson-Korrelation setzt Spearman keinen linearen Zusammenhang zwischen den Variablen voraus, sondern misst monotone Zusammenhänge auf Basis der Rangwerte. Außerdem ist Spearman robuster gegenüber Ausreißern. Dies ist hier besonders relevant, da mehrere numerische Variablen, beispielsweise `Cost_claims_year`, `R_Claims_history`, `Value_vehicle` und `Weight`, deutlich rechtsschief verteilt sind und Ausreißer aufweisen.
+
+Im nächsten Schritt werden die numerischen Merkmale ausgewählt, die Korrelationsmatrix berechnet und als Heatmap dargestellt. Anschließend werden starke Korrelationen identifiziert und fachlich interpretiert.
+
+```{r a1d korrelationsanalyse assoziationsanalyse numerische merkmale spearman}
+
+# Daten subsetten
+Insurance_data_num <- Insurance_data[Numerical_vars]
+
+# Korrelationsmatrix (Spearman)
+Correlationsmatrix <- cor(Insurance_data_num , method = "spearman", use = "complete.obs")
+
+# In long format umwandeln
+Correlationsmatrix_lang<- melt(Correlationsmatrix)
+
+# Heatmap
+p_cor <- ggplot(Correlationsmatrix_lang, aes(Var1, Var2, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                       midpoint = 0, limits = c(-1, 1)) +
+  theme_minimal(base_size = 14) +
+  labs(title = "Korrelationsmatrix (Spearman)",
+       x = "", y = "", fill = "Korrelation") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(p_cor)
+```
+
+
+Die Heatmap der Spearman-Korrelationen zeigt mehrere auffällige monotone Zusammenhänge zwischen den numerischen Merkmalen.
+
+Besonders stark positiv korreliert sind die fahrzeugbezogenen Variablen `Power`, `Cylinder_capacity`, `Value_vehicle`, `Length` und `Weight`. Dies ist fachlich plausibel, da größere und schwerere Fahrzeuge tendenziell auch leistungsstärker sind, einen größeren Hubraum besitzen und einen höheren Fahrzeugwert aufweisen.
+
+Ein sehr starker positiver Zusammenhang besteht außerdem zwischen `N_claims_year` und `Cost_claims_year`. Dies ist erwartbar, da eine höhere Anzahl von Schäden im betrachteten Jahr in der Regel auch mit höheren gesamten Schadenkosten verbunden ist.
+
+Auch `N_claims_history` und `R_Claims_history` weisen einen deutlichen positiven Zusammenhang auf. Beide Merkmale beziehen sich auf die Schadenhistorie und enthalten daher teilweise ähnliche Informationen.
+
+Zwischen `Policies_in_force` und `Max_policies` ist ebenfalls eine starke positive Korrelation erkennbar. Dies ist fachlich plausibel, da die maximale Anzahl gleichzeitig laufender Policen eng mit der Anzahl der im betrachteten Zeitraum laufenden Policen zusammenhängt.
+
+Auffällig ist zudem, dass `Seniority` positiv mit `N_claims_history` und `R_Claims_history` zusammenhängt. Dies kann dadurch erklärt werden, dass Kunden mit längerer Kundenbeziehung mehr Zeit hatten, Schäden in ihrer Historie zu sammeln.
+
+Für spätere Modellierungsschritte bedeutet dies, dass einige Variablen teilweise redundante Informationen enthalten. Insbesondere bei linearen oder generalisierten linearen Modellen sollte daher auf Multikollinearität geachtet werden. Mögliche Handlungsoptionen wären eine Variablenselektion, eine Zusammenfassung stark korrelierter Variablen oder eine Dimensionsreduktion, zum Beispiel mittels Hauptkomponentenanalyse. Bei baumbasierten Modellen ist Multikollinearität weniger kritisch, kann aber die Interpretation der Variablenwichtigkeit beeinflussen.
+
+#### Kategoriale Variablen
+
+Für die kategorialen Merkmale wird der paarweise Zusammenhang mithilfe von **Cramérs V** untersucht. Cramérs V ist ein Assoziationsmaß für kategoriale Variablen und nimmt Werte zwischen `0` und `1` an. Ein Wert nahe `0` spricht für keinen bzw. nur einen sehr schwachen Zusammenhang, während ein Wert nahe `1` auf einen starken Zusammenhang zwischen zwei Variablen hindeutet.
+
+
+```{r a1d korrelationsanalyse assoziationsanalyse kategoriele merkmale cramer_v}
+
+# Funktion für Cramér's V
+# Matrix erstellen
+N <- length(Categorical_vars_without_ID)
+Cramer_mat <- matrix(nrow=N,ncol=N)
+colnames(Cramer_mat) <- Categorical_vars_without_ID
+rownames(Cramer_mat) <- Categorical_vars_without_ID
+
+for (i in 1:N) {
+  for (j in 1:N) {
+    Contigency_t_ij<-table(Insurance_data[[Categorical_vars_without_ID[i]]],Insurance_data[[Categorical_vars_without_ID[j]]])
+    Cramer_mat[i, j]<-cramerV(Contigency_t_ij)
+    
+  }
+}
+
+# Long format
+Cramer_long <- reshape2::melt(Cramer_mat)
+
+# Heatmap
+p_cramer <- ggplot(Cramer_long, aes(Var1, Var2, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "#b2182b",
+                      limits = c(0, 1)) +
+  theme_minimal(base_size = 14) +
+  labs(title = "Cramér's V (kategoriale Variablen)",
+       x = "", y = "", fill = "Assoziation") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(p_cramer)
+```
+
+Die Heatmap zeigt, dass insbesondere zwischen `Type_risk` und `N_doors` ein deutlicher Zusammenhang besteht. Dies ist fachlich plausibel, da die Anzahl der Türen stark von der Fahrzeugart abhängt. Beispielsweise haben Motorräder typischerweise keine Türen, während Pkw und Vans üblicherweise mehrere Türen besitzen.
+
+Ebenfalls sichtbar ist ein Zusammenhang zwischen `Type_risk` und `Type_fuel`. Auch dies ist fachlich nachvollziehbar, da bestimmte Fahrzeugarten unterschiedliche Kraftstoff- bzw. Antriebsarten aufweisen können. 
+
+Zwischen `N_doors` und `Type_fuel` zeigt sich ebenfalls eine gewisse Assoziation. Diese kann dadurch erklärt werden, dass beide Merkmale mit der Fahrzeugart zusammenhängen. Die Beziehung ist daher vermutlich nicht isoliert zu betrachten, sondern teilweise durch `Type_risk` vermittelt.
+
+Die übrigen kategorialen Merkmale, beispielsweise `Distribution_channel`, `Payment`, `Area` und `Second_driver`, zeigen überwiegend schwache bis moderate Zusammenhänge mit den anderen kategorialen Variablen. Sie scheinen daher weniger stark redundant zu sein.
+
+Für spätere Modellierungsschritte bedeutet dies, dass insbesondere `Type_risk`, `N_doors` und `Type_fuel` teilweise ähnliche bzw. zusammenhängende Informationen enthalten. Bei interpretierbaren Modellen, etwa GLMs, sollte geprüft werden, ob diese Variablen gemeinsam verwendet werden oder ob Interaktionen bzw. eine geeignete Kodierung sinnvoll sind. Bei baumbasierten Verfahren ist eine starke Assoziation zwischen kategorialen Merkmalen meist weniger problematisch, kann aber die Interpretation der Variablenwichtigkeit beeinflussen.
+
+## e) Identifikation von Ausreißern
+ <div class="exercise_part" nummer="A1.e)" text="Identifikation von Ausreißern" >
+ Erläutern Sie in eigenen Worten eine konkrete Methode zur Identifikation
+von Ausreißern und wenden Sie diese anschließend auf den Hauptdatensatz an. Interpretieren Sie die erhaltenen
+Ergebnisse und diskutieren Sie mögliche Auswirkungen auf spätere Analysen und Modellierungen
+kurz.
+ </div>
+ 
+### Lösung:
+
+#### Numerische Merkmale
+
+Zur Identifikation von Ausreißern wird hier eine Perzentil-Methode verwendet. Die Methode orientiert sich an der Darstellung zur Ausreißererkennung mit Perzentilen in Stats and R: [Outliers detection in R](https://statsandr.com/blog/outliers-detection-in-r/#percentiles).
+
+Bei dieser Methode werden für jedes numerische Merkmal untere und obere Grenzwerte auf Basis ausgewählter Quantile berechnet. Werte, die außerhalb dieses Bereichs liegen, werden als potenzielle Ausreißer markiert.
+
+Konkret werden als untere Grenze das 2,5%-Quantil und als obere Grenze das 97,5%-Quantil verwendet. Damit werden pro numerischem Merkmal die jeweils extrem niedrigen und extrem hohen 2,5 % der Beobachtungen als auffällig betrachtet. Diese Methode ist einfach interpretierbar und eignet sich besonders für eine erste explorative Analyse, da keine bestimmte Verteilungsannahme getroffen werden muss.
+
+Ein Vorteil dieser Methode ist, dass sie robust gegenüber stark schiefen Verteilungen ist, da sie nicht auf Mittelwert und Standardabweichung basiert. Dies ist im vorliegenden Datensatz sinnvoll, da mehrere numerische Variablen, zum Beispiel `Cost_claims_year`, `R_Claims_history`, `Value_vehicle` und `Weight`, deutlich rechtsschief verteilt sind. Gleichzeitig ist zu beachten, dass mit dieser Methode immer ein bestimmter Anteil der Beobachtungen als potenziell auffällig markiert wird, auch wenn diese Werte fachlich plausibel sein können. Die Ergebnisse sind daher nicht automatisch als Fehler zu interpretieren, sondern als Hinweise auf Beobachtungen, die näher geprüft werden sollten.
+
+```{r a1e numerische merkmale ausreisser}
+# Ergebnisliste
+Outlier_results <- list()
+
+# Schleife über numerische Variablen (per Namen)
+for (Var_name in Numerical_vars) {
+  
+  # Zugriff über Spaltennamen
+  x <- na.omit(Insurance_data[[Var_name]])
+  Lower_bound<-quantile(x,0.025)
+  Upper_bound <-quantile(x,0.975)
+  Outliers <- x[x < Lower_bound | x > Upper_bound]
+  
+  # Speichern
+  Outlier_results[[Var_name]] <- list(
+       Lower_bound = Lower_bound,
+    Upper_bound = Upper_bound,
+    N_outliers = length(Outliers),
+    Outlier_values = Outliers
+  )
+}
+
+# Ergebnisse anzeigen
+Summary_table <- data.frame(
+  Variable = character(),
+  Outliers = numeric(),
+  Lower_Bound = numeric(),
+  Upper_Bound = numeric(),
+  stringsAsFactors = FALSE
+)
+
+for (Var_name in names(Outlier_results)) {
+  
+  Summary_table <- rbind(Summary_table, data.frame(
+    Variable = Var_name,
+    Outliers = Outlier_results[[Var_name]]$N_outliers,
+    Lower_Bound = Outlier_results[[Var_name]]$Lower_bound,
+    Upper_Bound = Outlier_results[[Var_name]]$Upper_bound
+  ))
+}
+
+Summary_table
+```
+Die Tabelle zeigt für jedes numerische Merkmal die Anzahl potenzieller Ausreißer sowie die jeweiligen unteren und oberen Grenzwerte der Perzentil-Methode. Werte unterhalb des 2,5%-Quantils oder oberhalb des 97,5%-Quantils werden dabei als potenziell auffällig markiert.
+
+Bei vielen Merkmalen liegt die Anzahl der Ausreißer ungefähr in der Größenordnung von 5 % der Beobachtungen. Dies ist methodisch erwartbar, da durch die Wahl der 2,5%- und 97,5%-Perzentile grundsätzlich die unteren und oberen Randbereiche der Verteilung betrachtet werden.
+
+Auffällig sind insbesondere die hohen oberen Grenzwerte bei `Cost_claims_year`, `R_Claims_history`, `Value_vehicle`, `Weight` und `Premium`. Diese Variablen sind deutlich rechtsschief verteilt, sodass einzelne sehr hohe Werte auftreten. Im Versicherungskontext müssen diese Werte jedoch nicht automatisch fehlerhaft sein. Hohe Schadenkosten, hohe Prämien oder besonders wertvolle bzw. schwere Fahrzeuge können fachlich plausibel sein.
+
+Bei `Power`, `Cylinder_capacity`, `Length` und `Weight` sollten auffällige Werte zusätzlich fachlich geprüft werden, da sie technische Fahrzeugmerkmale darstellen. Sehr niedrige oder sehr hohe Werte können entweder auf besondere Fahrzeugtypen oder auf Erfassungsfehler hinweisen.
+
+Für spätere Modellierungen bedeutet dies, dass Ausreißer einen relevanten Einfluss auf die Ergebnisse haben können. Besonders lineare Modelle oder Modelle mit quadratischer Fehlerfunktion können durch extreme Werte stark beeinflusst werden. Daher sollten mögliche Maßnahmen wie Log-Transformationen,Regulasierung oder eine separate Analyse extremer Beobachtungen geprüft werden. Eine automatische Entfernung der Ausreißer ist jedoch nicht sinnvoll, da viele dieser Werte fachlich begründbar sein können.
+
+
+#### Kategoriele Merkmale
+#### Ausreißer bei kategorialen Merkmalen: seltene Kategorien
+
+Für kategoriale Merkmale wird eine frequenzbasierte Methode zur Identifikation potenzieller Ausreißer verwendet. Die Grundidee besteht darin, Kategorien mit sehr niedriger relativer Häufigkeit als auffällig zu markieren.
+
+Dazu wird für jede kategoriale Variable zunächst die Häufigkeit jeder Ausprägung berechnet. Anschließend werden die relativen Häufigkeiten bestimmt. Kategorien, deren relativer Anteil unter einem vorher festgelegten Schwellenwert liegt, werden als potenziell auffällige bzw. seltene Kategorien betrachtet.
+
+In dieser Analyse wird ein Schwellenwert von `1 %` verwendet. Das bedeutet, dass Kategorien, die in weniger als `1 %` der Beobachtungen auftreten, als seltene Kategorien markiert werden.
+
+Seltene Kategorien können aus fachlicher Sicht unterschiedliche Ursachen haben. Einerseits können sie auf ungewöhnliche, aber valide Beobachtungen hinweisen. Andererseits können sie auch durch Tippfehler, Kodierungsfehler oder Inkonsistenzen in der Datenerfassung entstehen. Für spätere Modellierungsschritte sind seltene Kategorien relevant, da sie bei bestimmten Verfahren zu instabilen Schätzungen führen können, insbesondere wenn einzelne Kategorien nur sehr wenige Beobachtungen enthalten.
+
+Die Methode ist einfach interpretierbar und eignet sich gut für eine erste explorative Prüfung kategorialer Merkmale. Die identifizierten seltenen Kategorien sollten jedoch nicht automatisch entfernt werden, sondern fachlich geprüft werden.
+
+
+```{r a1e kategoriele merkmale ausreisser}
+# Schwellenwert für seltene Kategorien
+threshold <- 0.01  # 1%
+
+# Liste für Ergebnisse
+outlier_list <- list()
+
+for (var in Categorical_vars_without_ID) {
+  
+  # Häufigkeitstabelle
+  freq_table <- table(Insurance_data[[var]])
+  
+  # Relative Häufigkeiten
+  rel_freq <- prop.table(freq_table)
+  
+  # Seltene Kategorien identifizieren
+  rare_categories <- names(rel_freq[rel_freq < threshold])
+  
+  # Speichern
+  outlier_list[[var]] <- rare_categories
+}
+
+# Ergebnis anzeigen
+print(outlier_list)
+```
+Die Ausgabe zeigt, dass bei einem Schwellenwert von `1 %` nur zwei seltene Kategorien identifiziert werden:
+
+- Bei `Type_risk` ist die Kategorie `4` selten.
+- Bei `N_doors` ist die Kategorie `6` selten.
+
+Für die übrigen kategorialen Merkmale (`Distribution_channel`, `Payment`, `Area`, `Second_driver` und `Type_fuel`) wurden keine Kategorien mit einer relativen Häufigkeit unter `1 %` gefunden.
+
+Fachlich müssen diese seltenen Kategorien nicht automatisch fehlerhaft sein. `Type_risk = 4` steht für landwirtschaftliche Fahrzeuge und kann daher eine kleine, aber valide Fahrzeuggruppe darstellen. Auch `N_doors = 6` kann in Einzelfällen plausibel sein, etwa bei bestimmten Vans oder größeren Fahrzeugen. Dennoch sollten diese Kategorien bei späteren Modellierungsschritten beachtet werden, da sehr seltene Ausprägungen zu instabilen Parameterschätzungen führen können.
+
+Eine mögliche Handlungsoption wäre, diese Kategorien zunächst beizubehalten, aber bei der Modellierung gesondert zu prüfen. Falls sie zu instabilen Ergebnissen führen, könnten sie mit fachlich ähnlichen Kategorien zusammengefasst oder in einer Kategorie „Sonstige“ (wenn mehrere Kategorien selten wären) gebündelt werden.
+
+## f) Pair Plots
+<div class="exercise_part" nummer="A1.f)" text="Pair Plots" > Visualisieren Sie bivariate Zusammenhänge im Hauptdatensatz. Wählen Sie hierfür fünf fachlich
+interessante Merkmale aus und erstellen Sie geeignete Pair Plots. Nutzen Sie dabei Type_risk bei
+Bedarf zur Stratifizierung (z.B. getrennte Plots oder farbliche Kodierung), ohne auf eine einzelne Risikoklasse
+zu filtern. Interpretieren Sie die Muster (z.B. Cluster, Korrelationen, Nichtlinearitäten, Interaktionen,
+Redundanzen) und leiten Sie kurz ab, welche Konsequenzen sich daraus für spätere Modellierungsschritte
+ergeben.
+</div>
+ 
+### Lösung:
+
+#### Pair Plots für fünf fachlich interessante Merkmale
+
+Für die Visualisierung bivariater Zusammenhänge werden die fünf Merkmale `Premium`, `Cost_claims_year`, `N_claims_year`, `Area` und `Second_driver` betrachtet. Die farbliche Kodierung erfolgt über `Type_risk`, sodass Unterschiede zwischen den Risikoklassen sichtbar werden, ohne auf eine einzelne Klasse zu filtern.
+
+
+
+```{r a1f pair plots}
+Five_vars<-c("Premium", "Cost_claims_year","N_claims_year","Area","Second_driver")
+ggpairs(
+  Insurance_data,
+  columns = Five_vars,
+  aes(color = Insurance_data$Type_risk)
+)
+```
+
+Die Pair Plots zeigen zunächst, dass die schadenbezogenen Variablen `Cost_claims_year` und `N_claims_year` stark durch den Wert `0` geprägt sind.  Dies ist fachlich plausibel, da die Mehrheit der Policen im betrachteten Jahr keinen Schaden aufweist. Entsprechend konzentrieren sich viele Beobachtungen im unteren linken Bereich der Streudiagramme. Gleichzeitig sind bei positiven Werten deutliche Rechtsschiefe und einzelne hohe Ausreißer sichtbar.
+
+Zwischen `N_claims_year` und `Cost_claims_year` besteht ein klar positiver Zusammenhang. Dies ist fachlich erwartbar, da mit einer steigenden Anzahl an Schäden im betrachteten Jahr im Allgemeinen auch die gesamten Schadenkosten zunehmen. Der Zusammenhang ist jedoch nicht streng linear, da Policen mit gleicher Schadenanzahl sehr unterschiedliche Schadenhöhen aufweisen können. Dies deutet auf eine starke Heterogenität der Einzelschäden hin.
+
+Zwischen `Premium` und den schadenbezogenen Variablen zeigt sich dagegen nur ein schwacher positiver Zusammenhang. Die eingeblendeten Korrelationswerte bestätigen dies: Sowohl zwischen `Premium` und `Cost_claims_year` als auch zwischen `Premium` und `N_claims_year` sind die Korrelationen nur klein. Fachlich bedeutet dies, dass die Prämie zwar mit dem Risiko zusammenhängt, die tatsächlichen Schäden im einzelnen Jahr jedoch nur begrenzt erklärt. Dies ist plausibel, da Prämien typischerweise auf erwarteten Risiken beruhen, während realisierte Schäden zusätzlich durch Zufall beeinflusst werden.
+
+Die farbliche Kodierung nach `Type_risk` deutet auf Unterschiede zwischen den Risikoklassen hin. Insbesondere bei `Premium` sowie bei den Schadenvariablen sind die Beobachtungen der verschiedenen `Type_risk`-Klassen nicht vollständig gleich verteilt. Dies spricht dafür, dass `Type_risk` ein wichtiges Strukturmerkmal darstellt und in späteren Modellen berücksichtigt werden sollte. Gleichzeitig ist keine vollständige Trennung der Klassen sichtbar, sodass `Type_risk` zwar informativ, aber nicht allein ausreichend ist.
+
+Insgesamt zeigen die Pair Plots mehrere wichtige Muster:
+
+- `Cost_claims_year` und `N_claims_year` hängen positiv zusammen.
+- `Premium` weist nur einen schwachen bivariaten Zusammenhang mit den realisierten Schäden auf.
+- Die schadenbezogenen Variablen sind stark rechtsschief und enthalten viele Nullen.
+- `Type_risk` strukturiert die Daten sichtbar und sollte modellseitig berücksichtigt werden.
+- Für `Area` und `Second_driver` sind eher schwache direkte bivariate Zusammenhänge erkennbar.
+
+Für spätere Modellierungsschritte ergeben sich daraus mehrere Konsequenzen. Erstens sollten für schadenbezogene Zielgrößen Verfahren verwendet werden, die mit vielen Nullen und starker Schiefe umgehen können, etwa Zählmodelle für `N_claims_year` und geeignete Modelle für positive Schadenhöhen. Zweitens spricht die sichtbare Heterogenität zwischen den Risikoklassen dafür, `Type_risk` als erklärende Variable aufzunehmen oder Interaktionen mit anderen Merkmalen zu prüfen. Drittens legen die nichtlinearen und stark asymmetrischen Muster nahe, dass lineare Standardmodelle ohne Transformationen oder geeignete Verteilungsannahmen nur eingeschränkt passend wären.
+
+# A2: Versicherungstechnische Auffälligkeiten
+
+[Lernziele: 2.1, 2.2 & 5.1 | Punkte: 24]
+<div class="exercise" nummer="A2" text="Versicherungstechnische Auffälligkeiten" >
+In dieser Aufgabe sollen auffällige versicherungstechnische Muster im Portfolio identifiziert, plausibilisiert und
+in einzelne Bestandteile zerlegt werden. Verwenden Sie den Hauptdatensatz ``` Motor vehicle insurance data.csv ``` und nutzen Sie für Teilaufgabe d) zusätzlich den Zusatzdatensatz ```sample type claim.csv ```.
+</div>
+## a) Jahres- und Risikoklassen-Reporting
+<div class="exercise_part" nummer="A2.a)" text="Jahres- und Risikoklassen-Reporting" >
+Berechnen Sie ein Merkmal ```Year``` zum Kalenderjahr (von ```Date_last_renewal```); Policen beginnen bzw. enden typischerweise nicht zum 01.01. eines Kalenderjahres.
+Ermitteln Sie ein geeignetes Volumenmaß in Jahreseinheiten (```Exposure```), indem Sie die Vertragslaufzeit innerhalb
+eines Kalenderjahres anteilig berücksichtigen (z. B. über die Überlappung der Vertragsperiode zwischen ```Date_last_renewal``` und ```Date_next_renewal``` mit dem Kalenderjahr; bei Kündigung/Verfall zusätzlich ```Date_lapse```). Berechnen Sie die folgenden Größen jeweils zeitanteilig und aggregiert auf ```Year``` und ```Type_risk``` und stellen Sie diese anschließend in geeigneter Form grafisch dar:
+– Exposure,
+– verdiente Prämien (```Premium```),
+– Schadenkosten (```Cost_claims_year```),
+– Schadenanzahl (```N_claims_year```),
+– Schadenhäufigkeit (Claims/Exposure),
+– Durchschnittsschaden (Cost/Claims),
+– Schadenbedarf bzw. Pure Premium (Cost/Exposure),
+– durchschnittliche Prämienrate (Premium/Exposure),
+– Schadenquote (Cost/Premium).
+Diskutieren Sie drei unterschiedliche Auffälligkeiten in den resultierenden Zeitreihen bzw. Kennzahlen jeweils
+kurz in eigenen Worten.
+</div>
+### Lösung:
+
+
+#### Berechnung von `Year` und `Exposure`
+
+Zunächst wird aus `Date_last_renewal` das Kalenderjahr `Year` abgeleitet. Da Policen typischerweise nicht am 01.01. eines Jahres beginnen bzw. enden, wird zusätzlich ein zeitanteiliges Volumenmaß `Exposure` berechnet. Dieses gibt an, welcher Anteil der Vertragslaufzeit in ein bestimmtes Kalenderjahr fällt.
+
+Dazu wird zunächst geprüft, ob alle Verträge eine Laufzeit von einem Jahr haben:
+
+```{r a2a mehrjaehrige vertraege check}
+Insurance_data %>% 
+  filter((ymd(Date_last_renewal) %m+% years(1)) != Date_next_renewal)
+```
+Da keine Gegenbeispiele gefunden werden, kann davon ausgegangen werden, dass alle Verträge grundsätzlich einjährig sind. Ein Vertrag kann sich daher maximal auf zwei Kalenderjahre verteilen: auf das Jahr der letzten Verlängerung und auf das Folgejahr.
+
+Das tatsächliche Vertragsende wird als `End_date` definiert. Dieses entspricht entweder `Date_next_renewal`, wenn der Vertrag nicht vorher storniert wurde, oder `Date_lapse`, falls eine Stornierung bzw. ein Verfall  in dem **betrachteten Vertragsdauer** vorliegt.
+
+Anschließend werden folgende Exposure-Größen berechnet:
+
+- `Exposure_total`: gesamte beobachtete Vertragslaufzeit in Jahreseinheiten,
+- `Exposure_year`: Anteil der Vertragslaufzeit im Kalenderjahr von `Date_last_renewal`,
+- `Exposure_next_year`: Anteil der Vertragslaufzeit im Folgejahr.
+
+Da die Verträge einjährig sind, gilt:
+
+`Exposure_total = Exposure_year + Exposure_next_year`
+ 
+```{r a2a zerlegung der exposure pro vertrag}
+Insurance_data_exposure2<- Insurance_data %>%
+  mutate(End_date = case_when(!is.na(Date_lapse) &Date_lapse >= Date_last_renewal &Date_lapse <= Date_next_renewal ~ Date_lapse,
+                                      TRUE ~ Date_next_renewal
+                  ), 
+         Year=year(Date_last_renewal),
+         Next_year=Year+1,
+         Exposure_total=time_length(interval(Date_last_renewal,End_date),"years"),
+         Exposure_year=time_length(interval(Date_last_renewal,pmin(End_date,ceiling_date(Date_last_renewal,unit="year"))),"years"),
+         Exposure_next_year=Exposure_total-Exposure_year
+         
+  )
+```
+
+Als Plausibilitätsprüfung wird kontrolliert,
+
+(i) ob die Wertebereiche der neuen Spalten `Exposure_total`, `Exposure_year` und `Exposure_next_year` fachlich plausibel sind:
+
+```{r a2a sanity check exposure 1}
+summary(Insurance_data_exposure2%>%select(Exposure_total,Exposure_year,Exposure_next_year))
+
+```
+
+(ii) ob die gesamte Exposure bei nicht stornierten Verträgen gleich `1` ist:
+
+
+```{r a2a sanity check exposure 2}
+Insurance_data_exposure2%>%
+  filter(Exposure_total !=1 & is.na(Date_lapse)==1)
+```
+Die Prüfung zeigt keine Auffälligkeiten. Damit ist die Berechnung der Exposure plausibel.
+
+#### Aufteilung der Verträge auf Kalenderjahre
+
+Im nächsten Schritt wird der Datensatz so umgeformt, dass eine Beobachtung je Vertrag und Kalenderjahr entsteht. Ein Vertrag kann also entweder eine Zeile erzeugen, wenn er vollständig in einem Kalenderjahr liegt, oder zwei Zeilen, wenn er sich über zwei Kalenderjahre erstreckt.
+
+Die Merkmale `Premium`, `Cost_claims_year` und `N_claims_year` werden dabei zeitanteilig auf die Kalenderjahre verteilt. Dabei ist zu beachten, dass `N_claims_year` ursprünglich eine Zählvariable ist. Durch die zeitanteilige Verteilung können hier nicht ganzzahlige Werte entstehen. Für die aggregierte Betrachtung auf Jahres- und Risikoklassenebene wird dies als Näherung verwendet.
+```{r a2a hauptdatensatz mit exposure}
+# Analog zu Neugeschäft( hier ist aber (nicht nur) Neugeschäft sondern genau in dem Jahr alle verlängerte Verträge)
+Insurance_data_exposure_Renewal<-Insurance_data_exposure2 %>%
+  filter(Exposure_year >0) %>% 
+  mutate(
+    Premium_year=Premium*Exposure_year,
+    Cost_year=Cost_claims_year*Exposure_year,
+    Claims_year=N_claims_year*Exposure_year
+  )  %>%
+  select(-Cost_claims_year,-N_claims_year,-Premium,-Exposure_next_year,-Next_year) %>% 
+  rename( Premium=Premium_year,Cost_claims_year=Cost_year,N_claims_year=Claims_year,Exposure=Exposure_year) 
+
+#Analog zu Bestand
+Insurance_data_exposure_Old<-Insurance_data_exposure2 %>%
+    select(-Year,-Exposure_year) %>%
+   filter(Exposure_next_year >0) %>%
+  mutate(
+    Year=Next_year,
+    Exposure=Exposure_next_year,
+   Premium_year=Premium*Exposure_next_year,
+    Cost_year=Cost_claims_year*Exposure_next_year,
+    Claims_year=N_claims_year*Exposure_next_year
+  ) %>%
+  select(-Cost_claims_year,-N_claims_year,-Premium,-Exposure_next_year,-Next_year) %>% 
+  rename( Premium=Premium_year,Cost_claims_year=Cost_year,N_claims_year=Claims_year) 
+ 
+Insurance_data_exposure<-rbind(Insurance_data_exposure_Renewal,Insurance_data_exposure_Old) 
+ 
+
+```
+
+#### Aggregation auf `Year`- und `Type_Risk`-Ebene
+
+Im nächsten Schritt werden die geforderten Kennzahlen auf Ebene von `Year` und `Type_risk` aggregiert. Dabei werden zunächst Exposure, verdiente Prämien, Schadenkosten und Schadenanzahl summiert. Anschließend werden daraus die weiteren Kennzahlen berechnet:
+
+- Schadenhäufigkeit: Claims / Exposure (`Claim_Frequency`),
+- Durchschnittsschaden: Cost / Claims (`Severity`),
+- Schadenbedarf bzw. Pure Premium: Cost / Exposure (`Pure_Premium`),
+- durchschnittliche Prämienrate: Premium / Exposure (`Average_Premium_Rate`),
+- Schadenquote: Cost / Premium (`Loss_Ratio`).
+
+```{r a2a year risk reporting aggregation}
+ Year_Risk_Total<-Insurance_data_exposure %>%
+  group_by(Year,Type_risk) %>%
+ summarise(
+    Loss_Ratio=sum(Cost_claims_year)/sum(Premium),#Schadenquote
+    Average_Premium_Rate=sum(Premium)/sum(Exposure),#durchschnittliche_Praemienrate
+    Cost=sum(Cost_claims_year),#Schadenkosten
+    Claims=sum(N_claims_year),#Schadenanzahl
+    Claim_Frequency=sum(N_claims_year)/sum(Exposure),#Schadenhaeufigkeit
+    Severity=sum(Cost_claims_year)/sum(N_claims_year),#Durschschnittschaden
+    Pure_Premium=sum(Cost_claims_year)/sum(Exposure),#Schadenbedarf
+    Premium=sum(Premium),#verdiente_Praemien
+    Exposure=sum(Exposure),
+    .groups = "drop"
+  )
+
+```
+
+#### Grafische Darstellung der Kennzahlen {.tabset}
+
+Für die grafische Darstellung werden Zeitreihenplots verwendet, da dadurch die Entwicklung der Kennzahlen über die Kalenderjahre hinweg gut sichtbar wird. Die Darstellung erfolgt getrennt nach `Type_risk`.
+
+```{r a2a zeitreihen total,echo=FALSE, results='asis'}
+KPIs<-c("Exposure","Premium","Average_Premium_Rate","Cost","Claims","Claim_Frequency","Severity","Pure_Premium","Loss_Ratio")
+names(Palette_Risk) <- levels(factor(Year_Risk_Total$Type_risk))
+for (Var_name in KPIs) {
+  cat('\n#####', Var_name, '\n')
+    p <- ggplot(Year_Risk_Total, aes(x = Year, y =.data[[Var_name]], color = Type_risk)) +
+  geom_line() +
+    theme_minimal()
+      print(p)
+    cat('\n')
+}
+
+```
+
+#### Interpretation: Drei Auffälligkeiten
+
+1. Dominanz von `Type_risk = 3` im Portfolio
+
+In den Zeitreihen ist deutlich erkennbar, dass Type_risk = 3 den größten Anteil am Portfolio ausmacht. Dies zeigt sich insbesondere bei `Exposure`, `Premium`,`Cost` und `Claims`. Die Risikoklasse 3 (passenger cars - PkW) bestimmt daher wesentlich die Gesamtentwicklung des Bestands.
+
+Die `Exposure` steigt von 2015 bis 2018 deutlich an und fällt im Jahr 2019 wieder ab. Dieser Rückgang ist vermutlich dadurch erklärbar, dass das Jahr 2019 im Datensatz nur anteilig beobachtet wird. Da die Policen nicht zwingend zum 01.01. beginnen und die Vertragsperioden zeitanteilig auf Kalenderjahre aufgeteilt werden, sind Randjahre wie 2015 und 2019 nur eingeschränkt mit den vollständigeren Jahren vergleichbar.
+
+2. Deutliche Unterschiede in der Schadenhäufigkeit nach `Type_risk`
+
+Die Schadenhäufigkeit (`Claim_Frequency`) unterscheidet sich klar zwischen den Risikoklassen. Type_risk = 2(vans) und Type_risk = 3(passenger cars) weisen deutlich höhere Schadenhäufigkeiten auf als Type_risk = 1(motorbikes). Für Type_risk = 4 ist die Schadenhäufigkeit sehr niedrig bzw. aufgrund der geringen Exposure nur eingeschränkt aussagekräftig.
+
+Auffällig ist außerdem, dass die Schadenhäufigkeit nach 2016 bzw. 2017 deutlich zurückgeht. Dies kann auf Veränderungen im Bestand, auf eine veränderte Zusammensetzung der Risiken.
+
+3. Unterschiede bei Schadenbedarf, Durchschnittsschaden und Schadenquote
+
+Auch der Schadenbedarf (`Pure_Premium`), der Durchschnittsschaden (`Average_Claim_Size`) und die Schadenquote (`Loss_Ratio`) unterscheiden sich deutlich zwischen den Risikoklassen. Type_risk = 2 und Type_risk = 3 weisen im Vergleich zu Type_risk = 1 höhere Schadenkennzahlen auf. Type_risk = 4 zeigt dagegen sehr niedrige oder kaum interpretierbare Werte, was vermutlich auf die geringe Exposure und wenige bzw. keine Schäden zurückzuführen ist.
+
+Insgesamt fällt auf, dass Type_risk = 3 durchgehend die höchste Durchschnittsschaden pro Fall aufweist, während Type_risk = 1 besonders instabil verläuft. Dabei zeigt Type_risk = 3 einen deutlich steigenden Trend, während die Severity bei den übrigen Fahrzeugklassen eher konstant bleibt oder teilweise sogar sinkt. 
+
+## b) Zerlegung in Mix- vs. Niveau-Effekte
+<div class="exercise_part" nummer="A2.b)" text="Zerlegung in Mix- vs. Niveau-Effekte" >
+Führen Sie für ```Type_risk = 3``` eine einfache Komponentenzerlegung
+durch, um zu prüfen, ob Änderungen im Schadenbedarf eher durch Bestandsmix oder durch ein
+verändertes Schadenniveau (z. B. Inflation, Reparaturkosten, Tarif-/Deckungsänderungen) erklärbar sind.
+Segmentieren Sie innerhalb von ```Type_risk = 3``` (z. B. nach Area sowie groben Klassen zu Fahrzeuggröße
+bzw. -wert) und verwenden Sie 2016 als Basisjahr. Nutzen Sie z. B. eine indirekte Standardisierung: Schätzen
+Sie für 2016 je Segment den Schadenbedarf (Cost/Exposure) und wenden Sie diese Basisjahrraten
+auf den Segmentmix der Folgejahre an. Vergleichen Sie für jedes Jahr den beobachteten Schadenbedarf
+mit dem mix-standardisierten Schadenbedarf und interpretieren Sie die Differenz als Hinweis auf Niveaubzw.
+Mixeffekte.
+</div>
+### Lösung:
+
+
+In dieser Teilaufgabe wird für `Type_risk = 3` untersucht, ob die Entwicklung des Schadenbedarfs eher durch Veränderungen im Bestandsmix oder durch Veränderungen im Schadenniveau erklärt werden kann.
+
+Als Ausgangspunkt wird der in Teilaufgabe A2.a) erstellte Datensatz `Insurance_data_exposure` verwendet, da dieser bereits die zeitanteilige Exposure sowie die zeitanteilig zugeordneten Schadenkosten enthält. Für die Analyse wird zunächst auf `Type_risk = 3` gefiltert.
+
+```{r a2b typerisk3 mit exposure selektion}
+Type_Risk3_Pure_Premium_Analysis<- Insurance_data_exposure %>%
+        filter(Type_risk==3) %>%
+  select(Year,Exposure,Area,Value_vehicle,Cost_claims_year)
+```
+
+####Segmentierung
+
+Für die indirekte Standardisierung wird innerhalb von Type_risk = 3 nach `Area` und `Value_vehicle`(dem Fahrzeugwert) segmentiert. Das Merkmal `Value_vehicle` wird dafür in fünf Klassen eingeteilt. Die Klassengrenzen werden über Quantile bestimmt, sodass die Klassen ungefähr gleich viele Beobachtungen enthalten.
+
+```{r a2b typerisk3 vehicle value classes based on quantiles}
+Type_Risk3_Pure_Premium_Analysis <-Type_Risk3_Pure_Premium_Analysis %>%
+  mutate(
+    Value_vehicle_class = cut(
+      Value_vehicle,
+      breaks = quantile(Value_vehicle, probs = seq(0, 1, 0.2), na.rm = TRUE),
+      include.lowest = TRUE,
+      labels = c("1_very low", "2_low", "3_middle", "4_high", "5_very high")
+    )
+  )
+```
+
+Anschließend wird ein Segment als Kombination aus `Area` und der Klasse von `Value_vehicle` definiert.
+
+```{r a2b segmentation year und vehicle value class}
+# Segment definieren
+Type_Risk3_Pure_Premium_Analysis <-Type_Risk3_Pure_Premium_Analysis %>%
+  mutate(
+    Segment = paste(Area, Value_vehicle_class,sep = "_")
+  ) %>%
+select(-Area,-Value_vehicle,-Value_vehicle_class)
+
+```
+
+#### Aggregation auf Jahr- und Segmentebene
+
+Im nächsten Schritt werden `Exposure` und beobachtete Schadenkosten (`Cost_observed`) auf Ebene von `Year` und `Segment` aggregiert.
+
+```{r a2b aggregation jahr segment}
+Type_Risk3_Pure_Premium_aggregated<-Type_Risk3_Pure_Premium_Analysis%>%
+  group_by(Year,Segment) %>%
+  summarise(
+    Exposure=sum(Exposure),
+    Cost_observed= sum(Cost_claims_year),
+    .groups = "drop"
+  )
+```
+
+#### Basisraten aus dem Jahr 2016
+
+Als Basisjahr wird 2016 verwendet. Für jedes Segment wird der Schadenbedarf im Basisjahr berechnet. Dieser ergibt sich als:
+
+`Base_Rate = Cost_observed / Exposure`
+
+Diese segmentbezogenen Basisraten werden anschließend auf den Segmentmix der übrigen Jahre angewendet.
+
+```{r a2b jahr 2016 als basis definieren }
+Base_2016 <- Type_Risk3_Pure_Premium_aggregated %>%
+  filter(Year == 2016) %>%
+   mutate(Base_Rate = Cost_observed / Exposure) %>%
+  select(Segment,Base_Rate)
+```
+
+#### Berechnung der mix-standardisierten Schadenkosten
+
+Die Basisraten aus 2016 werden an alle Jahre angehängt. Anschließend werden standardisierte Schadenkosten(`Cost_standardized`) berechnet, indem die `Exposure` des jeweiligen Jahres und Segments mit der Basisrate aus 2016 multipliziert wird.
+
+```{r a2b cost standardized }
+#Basisraten an alle Jahre anhängen
+Type_Risk3_Pure_Premium_aggregated<- Type_Risk3_Pure_Premium_aggregated %>%
+  left_join(Base_2016, by = "Segment")
+#Standardisierte Kosten 
+Type_Risk3_Pure_Premium_aggregated<-Type_Risk3_Pure_Premium_aggregated%>%
+  mutate(
+    Cost_standardized = Exposure * Base_Rate
+  )
+```
+#### Beobachteter und mix-standardisierter Schadenbedarf
+
+Nun werden der beobachtete und der mix-standardisierte Schadenbedarf je Jahr berechnet. Der beobachtete Schadenbedarf ergibt sich aus den tatsächlichen Schadenkosten je Exposure. Der mix-standardisierte Schadenbedarf verwendet dagegen die Schadenbedarfsraten aus dem Basisjahr 2016 und wendet sie auf den jeweiligen Segmentmix der Folgejahre an.
+
+Die Differenz zwischen beobachtetem und mix-standardisiertem Schadenbedarf wird als Hinweis auf einen Niveau-Effekt interpretiert.
+
+```{r a2b schadenbedarf mix-standardisiert und beobachtet}
+Type_Risk3_Pure_Premium_Year<-Type_Risk3_Pure_Premium_aggregated%>%
+  group_by(Year) %>%
+  summarize(
+    Pure_Premium_observed=sum(Cost_observed)/sum(Exposure),
+    Pure_Premium_standardized=sum(Cost_standardized)/sum(Exposure),
+     Niveau_Effect = Pure_Premium_observed - Pure_Premium_standardized
+  )
+print(Type_Risk3_Pure_Premium_Year)
+```
+
+#### Visualisierung
+
+```{r a2b visualisierung der mix- bzw. niveau effekte}
+library(ggplot2)
+
+ggplot(Type_Risk3_Pure_Premium_Year, aes(x = Year)) +
+  geom_line(aes(y = Pure_Premium_observed, color = "Observed")) +
+  geom_line(aes(y = Pure_Premium_standardized, color = "Mix-standardized")) +
+  theme_minimal() +
+  labs(
+    title = "Mix vs. Niveau-Effekte (Type_risk = 3)",
+    y = "Pure Premium"
+  )
+```
+
+#### Interpretation
+
+Die Grafik zeigt, dass der mix-standardisierte Schadenbedarf ab 2016 relativ stabil bleibt bzw. leicht ansteigt. Das bedeutet, dass sich der Segmentmix nach Area und Value_vehicle_class allein nicht wesentlich so verändert hat, dass dadurch der starke Rückgang des beobachteten Schadenbedarfs erklärt werden könnte.
+
+Der beobachtete Schadenbedarf liegt im Basisjahr 2016 definitionsgemäß beim standardisierten Wert. Ab 2017 fällt der beobachtete Schadenbedarf jedoch deutlich unter den mix-standardisierten Schadenbedarf. Dieser Abstand wird in den Folgejahren immer größer, insbesondere im Jahr 2019.
+
+Damit deutet die Analyse darauf hin, dass der Rückgang des Schadenbedarfs bei Type_risk = 3 nicht primär durch eine Veränderung des Bestandsmixes nach den gewählten Segmentierungsmerkmalen erklärt wird. Vielmehr spricht die Differenz zwischen beobachtetem und mix-standardisiertem Schadenbedarf für einen **Niveau-Effekt**. Das heißt, bei gleichem Segmentmix wären auf Basis der 2016er Schadenbedarfsraten deutlich höhere Schadenkosten je Exposure zu erwarten gewesen, als tatsächlich beobachtet wurden.
+
+Mögliche fachliche Erklärungen für einen solchen Niveau-Effekt sind Veränderungen im tatsächlichen Schadenaufkommen, im Schadenmanagement, in der Schadenregulierung, in Tarif- oder Deckungsstrukturen (Selbstbehalte) oder auch Besonderheiten der Datenabgrenzung in den späteren Jahren.
+
+Insgesamt legt die Zerlegung aber nahe, dass die Entwicklung des Schadenbedarfs bei Type_risk = 3 eher durch ein verändertes Schadenniveau(also Niveau-Effekt) als durch reine Mixeffekte erklärt wird.
+
+## c) Verteilungsvergleiche nach Jahren
+<div class="exercise_part" nummer="A2.c)" text="Verteilungsvergleiche nach Jahren" >
+Vergleichen Sie für ```Type_risk = 3``` die Verteilungen ausgewählter
+versicherungstechnischer Größen über die Jahre, insbesondere ```Cost_claims_year``` (nur > 0) und ```Premium```.
+Identifizieren Sie mindestens eine konkrete Auffälligkeit und diskutieren Sie kurz plausible Ursachen sowie
+mögliche Auswirkungen auf spätere Modellierungen.
+</div>
+
+### Lösung:
+
+Für den Verteilungsvergleich werden Violinplots mit überlagerten Boxplots verwendet. Da sowohl `Cost_claims_year` als auch `Premium` rechtsschief verteilt sind und insbesondere bei den Schadenkosten starke Ausreißer auftreten, wird zusätzlich eine logarithmierte y-Achse verwendet. Dadurch werden Unterschiede im zentralen Bereich der Verteilungen besser sichtbar, ohne hohe Werte vollständig auszublenden.
+
+Die Dichteplots liefern eine ergänzende Sicht auf die Verteilungsform, werden hier jedoch nicht als Hauptdarstellung verwendet, da die Violinplots mit Boxplots Median, Streuung und Ausreißer übersichtlicher darstellen.
+
+#### ```Cost_claims_year``` (nur > 0) - Verteilungsvergleiche nach Jahren 
+```{r a2c datenaufbereitung}
+Insurance_data_exposure %>%
+  filter(Type_risk==3 & Cost_claims_year>0) %>%
+  select(Cost_claims_year,Year)
+```
+
+```{r a2c Cost_claims_year verteilung nach jahren }
+# data<-Insurance_data %>%
+#  filter(Type_risk==3 & Cost_claims_year>0) %>%
+#   mutate( Year=year(Date_last_renewal))  %>%
+#  select(Cost_claims_year,Year)
+#  p<-Insurance_data %>%
+#  filter(Type_risk==3 & Cost_claims_year>0) %>%
+#   mutate( Year=year(Date_last_renewal))  %>%
+#  select(Cost_claims_year,Year) %>%
+#  ggplot(aes(x = factor(Year), y = Cost_claims_year)) +
+#  geom_violin(fill = "#2166ac") +
+#  geom_boxplot( width = 0.15,
+#    fill = NA,        # transparent
+#    color = "black",)+
+#    theme_minimal(base_size = 14) +
+#    labs(
+#      title = "Verteilungsvergleich von Cost_claims_year(>0) für Type_risk==3 (zwischen Jahren)",
+#      x="Year",
+#      y="Cost_claims_year"
+#    )
+#print(p)
+ 
+```
+```{r a2c Cost_claims_year verteilung nach jahren logarithmiert}
+    p<-Insurance_data %>%
+  filter(Type_risk==3 & Cost_claims_year>0) %>%
+   mutate( Year=year(Date_last_renewal))  %>%
+  select(Cost_claims_year,Year) %>%
+  ggplot(aes(x = factor(Year), y = Cost_claims_year)) +
+  geom_violin(fill = "#2166ac") +
+   geom_boxplot(
+    width = 0.15,
+    fill = NA,        # transparent
+    color = "black"
+  ) +
+  scale_y_log10() + 
+    theme_minimal(base_size = 14) +
+    labs(
+      title = "Verteilungsvergleich: Cost_claims_year(>0),Type_risk=3",
+      x="Year",
+      y="log10(Cost_claims_year)"
+    )
+print(p)
+q<-Insurance_data %>%
+  filter(Type_risk==3 & Cost_claims_year>0) %>%
+   mutate( Year=year(Date_last_renewal))  %>%
+  select(Cost_claims_year,Year) %>%
+  ggplot( aes(x = Cost_claims_year, color = factor(Year))) +
+  geom_density(size=2) +
+  scale_x_log10() +
+  labs(title = "Verteilungsvergleich: Cost_claims_year(>0),Type_risk=3",
+       x = "Claim Cost (log scale)",
+       color = "Year") +
+  scale_color_manual(values = Palette_Year)+
+  theme_minimal()
+print(q)
+```
+
+#### ```Premium``` - Verteilungsvergleiche nach Jahren
+
+```{r a2c premium verteilung nach jahren}
+#  p<-Insurance_data %>%
+#  filter(Type_risk==3) %>%
+#   mutate( Year=year(Date_last_renewal))  %>%
+#  select(Premium,Year) %>%
+#    ggplot(aes(x = factor(Year), y = Premium)) +
+#  geom_violin(fill = "#2166ac") +
+#  geom_boxplot (width = 0.15,
+#    fill = NA,        # transparent
+#    color = "black")+
+#    theme_minimal(base_size = 14) +
+#    labs(
+#      title = paste(" Verteilung von Premium für Type_risk==3"),
+#      x ="Jahr",
+#      y = "Premium"
+#    )
+
+```
+
+```{r a2c premium verteilung nach jahren log}
+  p<-Insurance_data %>%
+  filter(Type_risk==3) %>%
+   mutate( Year=year(Date_last_renewal))  %>%
+  select(Premium,Year) %>%
+    ggplot(aes(x = factor(Year), y = Premium)) +
+  geom_violin(fill = "#2166ac") +
+  geom_boxplot (width = 0.15,
+    fill = NA,        # transparent
+    color = "black")+
+   scale_y_log10() +
+    theme_minimal(base_size = 14) +
+    labs(
+      title = paste(" Verteilung von Premium(Type_risk=3)"),
+      x ="Jahr",
+      y = "Premium"
+    )
+print(p)
+
+q<-Insurance_data %>%
+  filter(Type_risk==3) %>%
+   mutate( Year=year(Date_last_renewal))  %>%
+  select(Premium,Year) %>%
+  ggplot( aes(x = Premium, color = factor(Year))) +
+  geom_density(size=2) +
+  scale_x_log10() +
+  labs(title = "Verteilungsvergleich  von Premium) für Type_risk=3",
+       x = "Premium (log scale)",
+       color = "Year") +
+  scale_color_manual(values = Palette_Year)+
+  theme_minimal()
+print(q)
+```
+
+Die Verteilung der positiven Schadenkosten `Cost_claims_year > 0` zeigt über die Jahre eine ähnliche Grundstruktur: Die meisten Schäden liegen im unteren bis mittleren Bereich, während einzelne sehr hohe Schäden als Ausreißer auftreten. Besonders auffällig sind sehr hohe Einzelwerte in den Jahren 2016 und 2017. Dies deutet darauf hin, dass die Schadenkostenverteilung stark durch Großschäden beeinflusst wird.
+
+Im Vergleich dazu ist die Verteilung von `Premium` über die Jahre deutlich stabiler. Die Mediane und zentralen Bereiche der Verteilungen liegen relativ nah beieinander. Es gibt zwar ebenfalls Ausreißer nach oben und unten, aber die Prämienverteilung verändert sich insgesamt weniger stark als die Schadenkostenverteilung.
+
+Eine konkrete Auffälligkeit ist somit, dass die Schadenkosten deutlich volatiler sind als die Prämien. Während die Prämien relativ stabil kalkuliert erscheinen, können einzelne Großschäden die Schadenkosten eines Jahres stark beeinflussen. Eine plausible Ursache ist die typische Heterogenität von Schadenhöhen im Versicherungsgeschäft: Viele Schäden sind klein oder mittelgroß, wenige Schäden sind sehr teuer.
+
+Für spätere Modellierungen bedeutet dies, dass `Cost_claims_year` nicht ohne Weiteres mit einfachen linearen Modellen auf Originalskala modelliert werden sollte. Sinnvoll wären zum Beispiel Log-Transformationen, robuste Verfahren oder eine getrennte Modellierung von Schadenhäufigkeit und Schadenhöhe.
+
+## d) Schadenarten-Stichprobe
+
+<div class="exercise_part" nummer="A2.d)" text="Schadenarten-Stichprobe" >
+Entwickeln Sie einen geeigneten (heuristischen) Join-Ansatz, um den Zusatzdatensatz ```sample type claim.csv``` mit dem Hauptdatensatz zu verknüpfen, und validieren Sie die Verknüpfung
+explizit (insbesondere Zeilenzahl nach dem Join und Eindeutigkeit des Join-Schlüssels). Falls der
+Join zu Mehrfachzuordnungen bzw. Zeilenvervielfachungen führt, identifizieren Sie die betroffenen Beobachtungen
+und beschreiben Sie knapp, wie Sie damit methodisch umgehen. Analysieren Sie anschließend
+für jede Ausprägung von ```Type_risk``` separat, wie sich (i) der Anteil der Schadenarten an den Schadenkosten
+und (ii) die durchschnittlichen Kosten je Schadenart über die Jahre verändern, und diskutieren Sie, ob
+Veränderungen im Schadenarten-Mix als Erklärung für Trends aus Teilaufgabe b) infrage kommen.
+</div>
+### Lösung:
+
+Aus Aufgabe A1 b) unter „Plausibilitäten“ wurde bereits deutlich, dass der Zusatzdatensatz nicht für alle Policen mit Schaden aus dem Hauptdatensatz Informationen enthält. Von den `r integer_format(n_distinct(Insurance_data$ID))` unterschiedlichen IDs im Hauptdatensatz gibt es `r integer_format(unlist(ID_comparison_main_claim[ID_comparison_main_claim$Datensatz == "Hauptdatensatz", c("Anzahl_IDs_mit_Schaden")]))` IDs mit mindestens einem Schaden. Davon sind nur `r integer_format(unlist(ID_comparison_main_claim[ID_comparison_main_claim$Datensatz == "Hauptdatensatz", c("Anzahl_IDs_mit_Schaden")] - ID_comparison_main_claim[ID_comparison_main_claim$Datensatz == "Hauptdatensatz", c("Anzahl_IDs_fehlend_im_anderen_Datensatz")]))` im Zusatzdatensatz vorhanden.
+
+Im Folgenden wird schrittweise ein heuristischer Join-Ansatz entwickelt, um den Zusatzdatensatz `sample type claim.csv` mit dem Hauptdatensatz zu verknüpfen.
+
+#### Schritt 1: Beschreibung des Zusatzdatensatzes
+
+Wie in der Aufgabenstellung angegeben, stammen die Datensätze aus folgendem Artikel:
+
+J. Segura-Gisbert, J. Lledó & J. M. Pavía, *Dataset of an actual motor vehicle insurance portfolio*, European Actuarial Journal 15 (2025), 241–253, https://doi.org/10.1007/s13385-024-00398-0.
+
+Aus dem Artikel ergeben sich mehrere Hypothesen zur Struktur des Zusatzdatensatzes. Diese werden im Folgenden überprüft, da sie für die Spezifikation eines geeigneten Join-Ansatzes relevant sind.
+
+#### Schritt 2: Fakten zur Struktur des Zusatzdatensatzes
+
+##### Fakt 1: Der Zusatzdatensatz ist keine Aggregation nach `ID`, `Cost_claims_year` und `Claims_type`
+
+Jede Beobachtung im Zusatzdatensatz `sample type claim.csv` stellt keine reine Aggregation nach `ID`, `Cost_claims_year` und `Claims_type` dar. Damit ist die Beschreibung in der Datei `Descriptive of the variables` für die Variable `Cost_claims_by_type` („Total cost of claims by type for the insurance policy during the current year“) zumindest missverständlich.
+
+###### Beweisidee
+
+Der Beweis erfolgt über ein Gegenbeispiel. Wenn der Zusatzdatensatz bereits nach Schadenart aggregiert wäre, dürfte es für eine `ID`, bei der alle Schäden zu demselben Jahr gehören, keine mehrfach auftretende `Claims_type` geben. Es wird daher nach einer `ID` gesucht, bei der:
+
+1. `Cost_claims_year` eindeutig ist,
+2. die Summe von `Cost_claims_by_type` dem Wert von `Cost_claims_year` entspricht,
+3. mindestens eine `Claims_type` mehrfach vorkommt.
+
+  Wir suchen nach einem solchen ID und prüfen dass er existiert.
+```{r a2d fakt1,echo=TRUE}
+Counterexample<-Claim_data %>%
+  group_by(ID) %>%
+  summarize(
+           min_Cost_claims_year=min(Cost_claims_year),
+           max_Cost_claims_year=max(Cost_claims_year),
+           Cost_claims_by_type_total=sum(Cost_claims_by_type),
+           Count_distinct_Claim_types=n_distinct(Claims_type),
+           Counts=n()
+           ) %>%
+  filter(min_Cost_claims_year==min_Cost_claims_year &  Cost_claims_by_type_total==min_Cost_claims_year & Counts>Count_distinct_Claim_types) %>%
+  select(ID)%>%
+  top_n(1) %>%
+  inner_join(Claim_data,by= c("ID" = "ID"))
+print(Counterexample)
+
+
+```
+Das gefundene Gegenbeispiel zeigt, dass für dieselbe `ID` dieselbe Schadenart mehrfach auftreten kann. Daher ist der Zusatzdatensatz nicht als reine Aggregation nach `ID`, `Cost_claims_year` und `Claims_type` zu interpretieren.
+
+##### Fakt 2: Jede Beobachtung im Zusatzdatensatz repräsentiert einen Schaden
+ 
+Hier ist ein entsprechendes  Zitat aus dem Artikel auf der Seite 248:
+
+>...This subset includes detailed information on the nature of each claim,
+along with a more specific breakdown of the amount for each claim...The
+third column, Cost_claims_type , specifies the amount of the claim by type...
+
+
+Damit ist jede Zeile im Zusatzdatensatz als einzelner Schaden bzw. als einzelne Schadeninformation zu interpretieren.
+
+##### Fakt 3: Für jede `ID` enthält der Zusatzdatensatz Schäden aus nur einem Jahr
+
+Im Gegensatz zum Hauptdatensatz, in dem eine `ID` über mehrere Vertragsperioden vorkommen kann, scheint der Zusatzdatensatz je `ID` nur Schäden aus einem Jahr zu enthalten.
+
+Als notwendige Bedingung wird geprüft, ob es eine `ID` mit unterschiedlichen Werten in `Cost_claims_year` gibt.
+
+```{r a2d fakt3,echo=TRUE}
+Counterexamples<-Claim_data %>%
+  group_by(ID) %>%
+  summarize(
+           min_Cost_claims_year=min(Cost_claims_year),
+           max_Cost_claims_year=max(Cost_claims_year)
+           ) %>%
+  filter(min_Cost_claims_year!=min_Cost_claims_year) %>%
+  select(ID)
+print(Counterexamples)
+```
+
+Es werden keine Gegenbeispiele gefunden. Damit ist die notwendige Bedingung erfüllt.
+
+Diese Bedingung allein ist theoretisch noch nicht hinreichend, da dieselbe `ID` in verschiedenen Jahren zufällig identische Schadenkosten haben könnte. Der folgende Fakt liefert jedoch zusätzliche Evidenz.
+
+##### Fakt 4: Die Dekomposition von Cost_claims_year ist vollständig
+Für jedes Paar (`ID`, `Cost_claims_year`) entspricht die Summe von `Cost_claims_by_type` dem Wert von `Cost_claims_year`, bis auf sehr kleine Rundungsdifferenzen.
+
+```{r a2d fakt4, echo=TRUE}
+Counterexamples<-Claim_data %>%
+  group_by(ID,Cost_claims_year) %>%
+  summarize(
+           Cost_claims_by_type_year=sum(Cost_claims_by_type),
+           .groups = "drop"
+           ) %>%
+  mutate(
+    Abs_Difference=abs(Cost_claims_by_type_year-Cost_claims_year)
+  ) %>%
+  filter(Abs_Difference !=0)
+  
+  
+print(Counterexamples)
+
+```
+
+Zur Prüfung, ob es sich nur um Rundungsdifferenzen handelt, wird die maximale absolute Abweichung betrachtet:
+
+```{r a2d fkt4 abweichung, echo=TRUE}
+print(max(Counterexamples$Abs_Difference))
+```
+
+Da die maximale Abweichung höchstens `0,01` beträgt, wird dies als Rundungsdifferenz interpretiert. Damit kann angenommen werden, dass die Summe der Schadenkosten nach Schadenart den gesamten Schadenkosten der jeweiligen Police entspricht.
+  
+#### Schritt 3: Kandidaten für den Join identifizieren 
+
+Aus den obigen Fakten ergibt sich, dass für die Verknüpfung mindestens die Variablen `ID` und `Cost_claims_year` benötigt werden. 
+
+`ID` identifiziert die Police bzw. den Kunden, reicht allein aber nicht aus, da eine `ID` im Hauptdatensatz mehrfach vorkommen kann. `Cost_claims_year` dient zusätzlich als heuristisches Merkmal, um die passende Vertragsperiode im Hauptdatensatz zu approximieren.
+
+#### Schritt 4: Prüfung der Eindeutigkeit von `ID` und `Cost_claims_year`   
+
+Der Join über `ID` und `Cost_claims_year` wäre dann nicht eindeutig, wenn es im Hauptdatensatz IDs gibt, für die folgende Bedingungen gelten:
+
+1. Die `ID` kommt auch im Zusatzdatensatz vor.
+2. Für diese `ID` gibt es mindestens zwei Beobachtungen im Hauptdatensatz mit unterschiedlichem `Date_last_renewal`, aber identischem `Cost_claims_year > 0`.
+
+Dies wird im nächsten Schritt geprüft.
+
+```{r a2d duplikat kandidaten, echo=TRUE}
+Beispiele<-Insurance_data %>%
+  filter(Cost_claims_year>0)%>% #Wichtig da sonst wird 0 auch mitgezählt werden
+   group_by(ID) %>%
+  summarize(
+    min_Cost_claims_year=min(Cost_claims_year),
+    count_Cost_claims_year=n_distinct(Cost_claims_year),
+    count_year=n_distinct(Date_last_renewal)
+  ) %>% 
+filter(min_Cost_claims_year>0 & count_Cost_claims_year==1 & count_year>=2)  %>% 
+ # Bis hier:IDs aus dem Hauptdatensatz,die Bedingung 2. erfüllen
+inner_join(Claim_data,by="ID") %>% 
+select(ID) %>%
+ inner_join(Insurance_data,by="ID")  %>% 
+arrange(ID,Date_last_renewal)%>% 
+  select(ID,Date_last_renewal,Date_next_renewal,Lapse,Date_lapse,Cost_claims_year,N_claims_year)
+print(Beispiele)
+
+
+```
+
+Es gibt `r integer_format(n_distinct(Beispiele$ID))` solche IDs. Konkret führt der Join über `ID` und `Cost_claims_year` bei den `ID`s `27751`, `33739` und `52190` zu Mehrfachzuordnungen.
+
+Eine zusätzliche Verwendung von `N_claims_year` würde hier nicht helfen, da die entsprechenden Beobachtungen auch hinsichtlich `N_claims_year` übereinstimmen.
+
+#### Schritt 5: Der Join über  `ID` und `Cost_claims_year`   
+
+Zu Kontrollzwecken wird der Zusatzdatensatz zunächst um `N_claims_year` aus dem Zusatzdatensatz als Anzahl der Schadenzeilen je `ID` erweitert. Zusätzlich wird eine technische Zeilen-ID `claim_row_id` hinzugefügt.
+
+```{r a2d n_claims_year, echo=TRUE}
+Claim_data2<-Claim_data %>%
+   group_by(ID) %>%
+  summarize(
+   N_claims_year=n()
+  ) %>%
+  inner_join (Claim_data,by=c("ID" = "ID"))
+```
+
+```{r a2d claim_row_id, echo=TRUE}
+claim_row_id<-c(1:dim(Claim_data2)[1])
+Claim_data2<-cbind(claim_row_id,Claim_data2)
+```
+
+Der erste Join erfolgt über `ID` und `Cost_claims_year`.
+
+```{r a2d inner_join, warning=TRUE, echo=TRUE}
+Claim_insurance_data<-Claim_data2 %>%
+  inner_join(Insurance_data,by = c( "ID","Cost_claims_year"),suffix = c(".zd", ".hd"))%>% #zd=Zusatzdatensatz, hd=Hauptdatensatz
+mutate(Year=year(Date_last_renewal)
+       )
+
+```
+
+Der Join erzeugt erwartungsgemäß eine Warnung zu Mehrfachzuordnungen. Ein Teil der Warnung ist fachlich unproblematisch, da ein Vertrag mehrere Schäden haben kann (konkret Row 129: `ID=60`,`Date_last_renewal=2016-01-13`). Problematisch sind jedoch Fälle, in denen eine einzelne Schadenzeile aus dem Zusatzdatensatz mehreren Vertragsperioden im Hauptdatensatz zugeordnet wird (für Row 3630:`ID=27751`).
+
+Der verknüpfte Datensatz `Claim_insurance_data` enthält `r integer_format(dim(Claim_insurance_data)[1])` Zeilen. Damit enthält er `r integer_format(dim(Claim_insurance_data)[1]-dim(Claim_data)[1])` Zeilen mehr als der Zusatzdatensatz.
+
+#### Schritt 6: Auswertung der Mehrfachzuordnungen
+
+##### Haben alle Schäden mindestens einen Treffer?
+
+```{r a2d mehrfach jeder schaden 1, echo=TRUE}
+print(n_distinct(Claim_insurance_data$claim_row_id))
+```
+Im Join-Ergebnis gibt es `r integer_format(n_distinct(Claim_insurance_data$claim_row_id))` unterschiedliche Beobachtungen aus dem Zusatzdatensatz mit mindestens einem Treffer. Der Zusatzdatensatz enthält insgesamt `r integer_format(nrow(Claim_data))` Beobachtungen hat.
+
+Damit haben alle Schäden aus dem Zusatzdatensatz mindestens einen Treffer im Hauptdatensatz.
+
+##### Welche Duplikate gibt es im Join?
+
+```{r a2d mehrfach duplikate, echo=TRUE}
+doubles<-Claim_insurance_data %>%
+  group_by(claim_row_id) %>%
+  summarize (
+    matches=n()
+  ) %>%
+  filter (matches>1) %>%
+  select (claim_row_id) %>%
+  inner_join (Claim_insurance_data,by=c("claim_row_id")) %>%
+  arrange(claim_row_id) %>%
+  select(claim_row_id,ID,Date_last_renewal,N_claims_year.zd,N_claims_year.hd)
+print(doubles)
+```
+
+Wie bereits in Schritt 4 festgestellt, führen die `ID`s 27751, 33739 und 52190 zu Mehrfachzuordnungen. Betroffen sind die Schadenzeilen mit den technischen `claim_row_id` 3630, 4551 und 7184.
+
+##### Kontrolle: Stimmen die N_claims_year.zd und N_claims_year.hd Werte überein?
+
+```{r a2d abweichung n_claims, echo=TRUE}
+print(different_N_claims<-Claim_insurance_data %>%
+filter(N_claims_year.zd!=N_claims_year.zd))
+
+```
+
+Es gibt keine Abweichungen. Die Werte von `N_claims_year` stimmen im Zusatz- und Hauptdatensatz überall überein.
+
+#### Schritt 7: Prüfung einer möglichen Jahres-Hypothese
+
+Da in der Beschreibung des Zusatzdatensatzes mehrfach vom „current year“ gesprochen wird, könnte man vermuten, dass alle Beobachtungen im Zusatzdatensatz zu Verträgen mit demselben year(Date_last_renewal) gehören. Dies würde die Auflösung von Mehrfachzuordnungen erleichtern.
+
+```{r a2d hypothese 5, echo=TRUE}
+ p <- ggplot(Claim_insurance_data, aes(x = Year)) +
+      geom_histogram(
+        binwidth = 1,  
+        fill = Palette6[1],
+        color = "white"
+      ) 
+    print(p)
+```
+
+Die Hypothese wird nicht bestätigt. Zwar kommt das Jahr 2016 besonders häufig vor, es sind jedoch mehrere Jahre im verknüpften Datensatz vertreten.
+
+#### Schritt 8: Umgang mit Mehrfachzuordnungen
+
+Zur Auflösung der Mehrfachzuordnungen wird folgender heuristischer Ansatz gewählt:
+
+Wenn eine Schadenzeile aus dem Zusatzdatensatz mehreren Beobachtungen im Hauptdatensatz zugeordnet werden kann, wird die Beobachtung mit dem aktuellsten `Date_last_renewal` ausgewählt. Diese Entscheidung ist heuristisch und orientiert sich am Begriff „current year“ aus der Beschreibung des Zusatzdatensatzes.
+
+#### Endgültiger Join-Ansatz
+
+Der endgültige Join-Ansatz lautet:
+
+ 1. Der Join erfolgt als Inner Join über `ID` und `Cost_claims_year` 
+ 
+ 2. Bei Mehrfachzuordnung einer Schadenzeile wird der Treffer mit dem aktuellsten `Date_last_renewal` gewählt.
+ 
+ 3.`N_claims_year` wird nicht als zusätzlicher Join-Schlüssel verwendet, da es in den relevanten Fällen keine zusätzliche Eindeutigkeit erzeugt.
+ 
+
+```{r a2d endgueltiges join, echo=TRUE}
+Claim_insurance_data <- Claim_data%>%
+  mutate(claim_row_id = row_number()) %>%
+  inner_join(Insurance_data,
+             by = c("ID", "Cost_claims_year")) %>%
+  group_by(claim_row_id) %>%
+  slice_max(Date_last_renewal, n = 1, with_ties = FALSE) %>%
+  ungroup()
+       
+```
+
+##### Finale Validierung: Hat jeder Schaden genau einen Treffer?
+
+```{r a2d mehrfachzuordnung auswertung final 1, echo=TRUE}
+print(n_distinct(Claim_insurance_data$claim_row_id))
+```
+
+Im finalen Join-Ergebnis gibt es `r n_distinct(Claim_insurance_data$claim_row_id)` unterschiedliche Schadenzeilen aus dem Zusatzdatensatz. Dies entspricht der Anzahl der Beobachtungen im Zusatzdatensatz, also `r integer_format(nrow(Claim_data))`. 
+
+##### Gibt es nach dem finalen Join noch Duplikate?
+
+Hier werden wir die Duplikate in dem Join anzeigen lassen.
+
+```{r a2d mehrfachzuordnung auswertung final 2, echo=TRUE}
+doubles<-Claim_insurance_data %>%
+  group_by(claim_row_id) %>%
+  summarize (
+    matches=n()
+  ) %>%
+  filter (matches>1) %>%
+  select (claim_row_id) %>%
+  inner_join (Claim_insurance_data,by=c("claim_row_id")) %>%
+  arrange(claim_row_id) 
+  
+print(doubles)
+```
+
+Es gibt keine Duplikate mehr. Der finale Join ist damit bezüglich der Schadenzeilen aus dem Zusatzdatensatz eindeutig.
+
+#### Schadenartanalyse nach `Type_risk` {.tabset}
+Im nächsten Schritt wird für jede Ausprägung von Type_risk separat untersucht,
+
+(i) wie sich der Anteil der Schadenarten an den Schadenkosten über die Jahre verändert und
+(ii) wie sich die durchschnittlichen Kosten je Schadenart über die Jahre entwickeln.
+
+Dabei ist zu beachten, dass der Zusatzdatensatz nur eine Stichprobe der Schäden enthält. Die Ergebnisse sind daher explorativ zu interpretieren und können nicht uneingeschränkt auf den gesamten Hauptdatensatz übertragen werden.
+
+```{r a2d schadenartanalyse type_risk, results='asis', ECHO=FALSE}
+# Eine Farbe pro Schadenart fixieren
+all_claim_types <- sort(unique(Claim_insurance_data$Claims_type))
+
+claim_colors <- setNames(Palette9[seq_along(all_claim_types)], all_claim_types)
+Type_risk_list <- sort(unique(Claim_insurance_data$Type_risk))
+
+for (tr in Type_risk_list) {
+  
+  cat("\n##### Type_risk =", tr, "\n")
+  
+  # (i) Anteil der Schadenarten an den Schadenkosten
+  p_share <- Claim_insurance_data %>%
+    filter(Type_risk == tr) %>%
+    mutate(
+      Year = year(Date_last_renewal),
+      Claims_type = factor(Claims_type, levels = all_claim_types)
+    ) %>%
+    group_by(Year, Claims_type) %>%
+    summarise(
+      Cost_claims_type_total = sum(Cost_claims_by_type, na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    group_by(Year) %>%
+    mutate(
+      Total_year_cost = sum(Cost_claims_type_total, na.rm = TRUE),
+      Share = Cost_claims_type_total / Total_year_cost
+    ) %>%
+    ungroup() %>%
+    ggplot(aes(x = factor(Year), y = Share, fill = Claims_type)) +
+    geom_col(position = "stack") +
+    scale_y_continuous(
+      labels = percent_format(accuracy = 1, decimal.mark = ","),
+      limits = c(0, 1)
+    ) +
+    scale_fill_manual(
+      values = claim_colors
+     
+    ) +
+    labs(
+      title = paste("Anteil der Schadenarten an den Schadenkosten, Type_risk =", tr),
+      x = "Jahr",
+      y = "Anteil an den Schadenkosten",
+      fill = "Schadenart"
+    ) +
+    theme_minimal(base_size = 14)
+  
+  print(p_share)
+  
+  # (ii) Durchschnittliche Kosten je Schadenart
+  p_avg <- Claim_insurance_data %>%
+    filter(Type_risk == tr) %>%
+    mutate(
+      Year = year(Date_last_renewal),
+      Claims_type = factor(Claims_type, levels = all_claim_types)
+    ) %>%
+    group_by(Year, Claims_type) %>%
+    summarise(
+      Average_cost_by_type = mean(Cost_claims_by_type, na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    ggplot(aes(
+      x = factor(Year),
+      y = Average_cost_by_type,
+      color = Claims_type,
+      group = Claims_type
+    )) +
+    geom_line(linewidth = 1) +
+    geom_point(size = 2) +
+    scale_color_manual(
+      values = claim_colors
+      
+    ) +
+    labs(
+      title = paste("Durchschnittliche Kosten je Schadenart, Type_risk =", tr),
+      x = "Jahr",
+      y = "Durchschnittliche Kosten je Schadenart",
+      color = "Schadenart"
+    ) +
+    theme_minimal(base_size = 14)
+  
+  print(p_avg)
+   cat("\n")
+}
+
+```
+
+#### Interpretation der Schadenartenanalyse & Diskussion: Können Veränderungen im Schadenarten-Mix Trends aus Teilaufgabe b) erklären?
+
+Die Grafiken zeigen, dass sich sowohl der Schadenarten-Mix als auch die durchschnittlichen Kosten je Schadenart zwischen den Risikoklassen unterscheiden. Die Ergebnisse sind jedoch vorsichtig zu interpretieren, da der Zusatzdatensatz nur eine Stichprobe der Schäden enthält.
+
+##### `Type_risk = 1`
+
+Für `Type_risk = 1` treten nur wenige Schadenarten auf. Der Kostenanteil von `injuries` ist im Jahr 2015 besonders hoch, geht danach aber stark zurück. Ab 2016 dominieren vor allem `complaint`, `travel assistance` und teilweise `negligence` die Schadenkosten.
+
+Die durchschnittlichen Kosten zeigen, dass `injuries` im Jahr 2015 sehr hohe durchschnittliche Kosten verursacht, danach aber kaum noch eine Rolle spielt. `Complaint` bleibt relativ stabil, während `negligence` stärkeren Schwankungen unterliegt. Dies deutet darauf hin, dass einzelne teurere Schadenarten in kleinen Segmenten einen starken Einfluss auf die Schadenkosten haben können.
+
+##### `Type_risk = 2`
+
+Bei `Type_risk = 2` ist `negligence` über alle Jahre hinweg die wichtigste Schadenart gemessen am Anteil an den Schadenkosten. Daneben spielen `complaint`, `travel assistance`, `broken windows`, `all risks` und `injuries` eine Rolle. Auffällig ist, dass der Anteil von `injuries` im Jahr 2018 deutlich zunimmt.
+
+Auch bei den durchschnittlichen Kosten zeigt `injuries` im Jahr 2018 einen starken Anstieg. Dies spricht dafür, dass der Schadenbedarf in diesem Jahr durch einzelne teure Personenschäden beeinflusst worden sein könnte. `Negligence` weist ebenfalls vergleichsweise hohe durchschnittliche Kosten auf, entwickelt sich aber stabiler. `Travel assistance` und `broken windows` bleiben auf einem deutlich niedrigeren Kostenniveau.
+
+##### `Type_risk = 3`
+
+Für `Type_risk = 3` ist der Schadenarten-Mix breiter als bei den anderen Risikoklassen. Den größten Anteil an den Schadenkosten hat über alle Jahre hinweg `negligence`. Daneben sind `complaint`, `travel assistance`, `all risks`, `injuries`, `theft`, `other` und vereinzelt `fire` relevant.
+
+Auffällig ist, dass der Anteil von `negligence` im Jahr 2017 besonders hoch ist und 2018 wieder zurückgeht. Gleichzeitig steigt 2018 der Anteil von `complaint` deutlich an. Die durchschnittlichen Kosten zeigen starke Schwankungen bei einzelnen Schadenarten, insbesondere bei `injuries`, `fire`, `other` und `negligence`. Besonders hohe durchschnittliche Kosten treten bei `injuries` im Jahr 2016 und bei `fire` im Jahr 2016 auf. Diese Schadenarten scheinen jedoch nicht in jedem Jahr gleich stark vertreten zu sein.
+
+Im Zusammenhang mit Teilaufgabe b) ist besonders `Type_risk = 3` relevant. Dort wurde ein Rückgang des beobachteten Schadenbedarfs gegenüber dem mix-standardisierten Schadenbedarf festgestellt. Die Schadenartenanalyse deutet darauf hin, dass Veränderungen im Schadenarten-Mix zumindest teilweise eine Rolle spielen könnten. Wenn teure Schadenarten wie `injuries` oder `fire`  in späteren Jahren seltener auftreten oder geringere durchschnittliche Kosten verursachen, kann dies den beobachteten Rückgang des Schadenbedarfs mit erklären.
+
+Gleichzeitig zeigt die Analyse, dass `negligence` weiterhin einen großen Anteil an den Schadenkosten hat. Der reine Schadenarten-Mix erklärt den Trend daher vermutlich nicht vollständig. Vielmehr könnten sowohl Mixeffekte innerhalb der Schadenarten als auch Niveau-Effekte, also veränderte durchschnittliche Schadenhöhen, eine Rolle spielen.
+
+##### Gesamtbewertung
+
+Insgesamt zeigen die Grafiken, dass die Schadenkosten stark von wenigen Schadenarten und teilweise von einzelnen Jahren beeinflusst werden. Besonders teure Schadenarten wie `injuries`, `fire`, `other` oder `negligence` können den Schadenbedarf deutlich verändern, auch wenn sie nicht immer den größten Anteil an der Schadenanzahl haben.
+
+Damit kommen Veränderungen im Schadenarten-Mix grundsätzlich als Erklärung für Trends aus Teilaufgabe b) infrage. Aufgrund der Stichprobenstruktur des Zusatzdatensatzes und des heuristischen Joins sollte diese Interpretation jedoch nur als explorativer Hinweis verstanden werden. Eine endgültige Erklärung des Rückgangs des Schadenbedarfs ist auf Basis dieser Analyse allein nicht möglich.
+
+## e) Auffällige Häufung auf einem festen Schadenbetrag und Ursachenanalyse
+
+<div class="exercise_part" nummer="A2.e)" text="Auffällige Häufung auf einem festen Schadenbetrag und Ursachenanalyse" >
+Untersuchen Sie für `Type_risk = 3` die positiven Schadenkosten `Cost_claims_year` auf eine ungewöhnliche Punktmasse bzw.
+Häufung auf einem exakten Betrag. Identifizieren Sie dazu einen konkreten Betrag, auf den sich viele Beobachtungen
+konzentrieren, und quantifizieren Sie die Häufung (absolute Anzahl und Anteil an allen Beobachtungen
+mit `Cost_claims_year > 0`), jeweils insgesamt und nach Jahren. Prüfen Sie, ob auch Vielfache
+dieses Betrags gehäuft auftreten. Nutzen Sie den Zusatzdatensatz sample type claim.csv zur Einordnung,
+indem Sie analysieren, welche Schadenarten besonders häufig bei diesen Fällen auftreten. Recherchieren
+und erläutern Sie eine plausible fachliche Ursache, woher ein solcher fixer Betrag im spanischen
+Kfz-Versicherungskontext stammen könnte.
+</div>
+### Lösung:
+In diesem Schritt werden für `Type_risk = 3` die positiven Schadenkosten `Cost_claims_year > 0` auf ungewöhnliche Häufungen bei exakten Beträgen untersucht. Ziel ist es, festzustellen, ob bestimmte Schadenbeträge auffällig häufig auftreten und ob diese Häufung fachlich erklärbar ist.
+
+#### Identifikation eines auffälligen Betrags
+
+Zunächst werden die positiven Schadenkosten für `Type_risk = 3` ausgewählt und nach ihrer Häufigkeit sortiert.
+
+```{r a2e haeufigket der betraege}
+Insurance_data_TypeRisk3_costs<- Insurance_data %>%
+  filter(Type_risk == "3",
+         Cost_claims_year > 0) %>%
+  mutate (Year=year(Date_last_renewal))
+freq_table <- Insurance_data_TypeRisk3_costs %>%
+  count(Cost_claims_year, sort = TRUE)
+print(freq_table)
+```
+
+Die Häufigkeitstabelle zeigt eine auffällige Punktmasse beim Betrag 882. Dieser Betrag tritt deutlich häufiger auf als andere exakte Schadenbeträge. Daher wird im Folgenden die Häufung bei Cost_claims_year = 882 genauer untersucht.Der Betrag von 882 tritt mehr als doppelt so häufig auf wie der zweithäufigste Betrag (52,0) und ist daher auffällig.
+
+#### Häufung auf den Betrag 882 - insgesamt 
+```{r a2e haeufung betrag 882 insgesamt}
+target_value <- 882
+heaping_total <- Insurance_data_TypeRisk3_costs %>%
+  summarise(
+    total_obs = n(),
+    count_target = sum(Cost_claims_year == target_value),
+    share_target=count_target / total_obs,
+    share_target_us = scales::percent(
+      count_target / total_obs,
+      accuracy = 0.01,
+      decimal.mark = "."
+    )
+  )
+
+print(heaping_total[c("total_obs","count_target","share_target_us")])
+```
+
+Insgesamt haben `r integer_format(heaping_total$count_target)` von `r integer_format(heaping_total$total_obs)` Beobachtungen mit positiven Schadenkosten bei `Type_risk = 3` exakt den Wert 882. Dies entspricht einem Anteil von `r pct_format(heaping_total$share_target)`.
+
+Damit liegt eine deutliche Häufung auf einem festen Schadenbetrag vor.
+
+#### Häufung auf den Betrag 882  -nach Jahren
+```{r a2e haeufung betrag 882 nach jahren}
+heaping_by_year <- Insurance_data_TypeRisk3_costs %>%
+  group_by(Year) %>%
+  summarise(
+    total_obs = n(),
+    count_target = sum(Cost_claims_year == target_value),
+    share_target=count_target / total_obs,
+    share_target_us =scales::percent(
+      count_target / total_obs,
+      accuracy = 0.01,
+      decimal.mark = "."
+    ),
+    .groups = "drop"
+  )
+print(heaping_by_year[c("Year","total_obs","count_target","share_target_us")])
+```
+
+Die jahresweise Auswertung zeigt, dass der Betrag 882 nicht nur in einem einzelnen Jahr auffällig häufig vorkommt, sondern über mehrere Jahre hinweg beobachtet wird. Dies spricht gegen einen einmaligen Zufallseffekt und deutet eher auf eine strukturelle Ursache hin.
+
+#### Prüfung auf Vielfache des Betrags
+
+Zusätzlich wird geprüft, ob nicht nur der Betrag 882 selbst, sondern auch Vielfache dieses Betrags gehäuft auftreten. Dies wäre plausibel, wenn der Betrag eine Art pauschalen Abrechnungs- oder Ausgleichsbetrag darstellt und mehrere solche Einheiten in einem Jahr auftreten können.
+
+##### Insgesamt
+
+```{r a2e haeufung vielfache betrag 882 insgesamt}
+total_obs <- nrow(Insurance_data_TypeRisk3_costs)
+
+heaping_multiples <- Insurance_data_TypeRisk3_costs %>%
+  mutate(
+    multiple = Cost_claims_year / target_value
+  ) %>%
+  filter(
+    Cost_claims_year %% target_value == 0
+  ) %>%
+  group_by(multiple) %>%
+  summarise(
+    count_multiple = n(),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    share_multiple = scales::percent(
+      count_multiple / total_obs,
+      accuracy = 0.01,
+      decimal.mark = ","
+    )
+  )
+
+print(heaping_multiples)
+```
+
+##### Nach Jahren
+
+```{r a2e haeufung vielfache betrag 882 nach jahren}
+total_obs_by_year <- Insurance_data_TypeRisk3_costs %>%
+  mutate(
+    Year = year(Date_last_renewal)
+  ) %>%
+  group_by(Year) %>%
+  summarise(
+    total_obs_year = n(),
+    .groups = "drop"
+  )
+
+heaping_multiples_by_year <- Insurance_data_TypeRisk3_costs %>%
+  mutate(
+    Year = year(Date_last_renewal),
+    multiple = Cost_claims_year / target_value
+  ) %>%
+  filter(
+    Cost_claims_year %% target_value == 0
+  ) %>%
+  group_by(Year, multiple) %>%
+  summarise(
+    count_multiple = n(),
+    .groups = "drop"
+  ) %>%
+  left_join(total_obs_by_year, by = "Year") %>%
+  mutate(
+    share_multiple = scales::percent(
+      count_multiple / total_obs_year,
+      accuracy = 0.01,
+      decimal.mark = ","
+    )
+  ) %>%
+  arrange(Year, multiple)
+
+print(heaping_multiples_by_year)
+```
+
+Auch Vielfache von 882 treten in den Daten auf. Dies unterstützt die Vermutung, dass es sich nicht um einen zufälligen Reparaturbetrag handelt, sondern um einen systematisch verwendeten Betrag.
+
+#### Einordnung mithilfe des Zusatzdatensatzes
+
+Zur fachlichen Einordnung wird der Zusatzdatensatz `sample type claim.csv` verwendet. Dabei wird geprüft, welche Schadenarten besonders häufig bei Beobachtungen mit `Cost_claims_year = 882` auftreten.
+
+##### Schadenarten bei Cost_claims_year = 882 — insgesamt 
+
+```{r a2e schadenart bei 882 insgesamt}
+claims_882 <- Claim_insurance_data %>%
+  filter(Cost_claims_year == target_value) %>%
+  mutate(Year=year(Date_last_renewal))
+type_distribution <- claims_882 %>%
+  count(Claims_type, sort = TRUE) %>%
+  mutate(share = n / sum(n))
+ggplot(type_distribution,
+       aes(x = reorder(Claims_type, share), y = share)) +
+  geom_col() +
+  coord_flip() +
+  labs(title = "Schadenarten bei Betrag 882",
+       x = "Schadenart",
+       y = "Anteil") +
+  theme_minimal()
+```
+
+#####  Schadenarten bei Cost_claims_year = 882 - nach Jahren
+
+```{r a2e schadenart bei 882 jahren}
+claims_882 %>%
+  count(Claims_type, Year, sort = TRUE) %>%
+  arrange(desc(Year),desc(n)) %>%
+  relocate(Year,Claims_type)
+```
+
+Die Auswertung des Zusatzdatensatzes zeigt, dass bei den Beobachtungen mit `Cost_claims_year = 882` insbesondere die Schadenart `negligence`(Fahrlässigkeit) häufig vorkommt. Dies deutet darauf hin, dass es sich bei diesen Fällen häufig um verschuldensbezogene Kfz-Schäden handelt.
+
+#### Fachliche Ursachenanalyse
+
+Eine plausible fachliche Erklärung für die auffällige Häufung beim Betrag 882 ist das spanische Direktregulierungssystem im Kfz-Versicherungsmarkt. In Spanien werden viele Kfz-Sachschäden zwischen zwei Fahrzeugen über die Abkommen CIDE bzw. ASCIDE abgewickelt. Technisch erfolgt die Abwicklung über das System CICOS. Dabei reguliert der Versicherer des Geschädigten zunächst den Schaden seines eigenen Kunden. Anschließend erfolgt zwischen den beteiligten Versicherern ein pauschaler Ausgleich über einen sogenannten Kompensationsbetrag bzw. ein Modul. Dieser Betrag ist unabhängig von den tatsächlich entstandenen Reparaturkosten.
+
+Für das CICOS-System ist für das Jahr 2011 ein Modulbetrag von 882 € dokumentiert. Dies passt sehr gut zur beobachteten Punktmasse im Datensatz. Da Type_risk = 3 Pkw bzw. private passenger cars umfasst und die Schadenart negligence bei Fällen mit dem Betrag 882 besonders häufig auftritt, ist die Häufung fachlich plausibel als Folge eines standardisierten Ausgleichsbetrags im spanischen Kfz-Schadenregulierungssystem interpretierbar.
+
+Dafür spricht auch der folgende Kommentar der Autoren im Artikel unter Figure 2:
+
+> “The CICOS agreement in Spain facilitates handling claims from vehicle collisions, aiming to expedite compensation for material damage. It sets a predetermined amount agreed upon by the involved insurance companies, regardless of the actual claim, with costs rising from around €800 in 2019 to over €1000 in 2023.”
+
+Dieser Kommentar bestätigt, dass im spanischen CICOS-System ein vorab festgelegter Ausgleichsbetrag zwischen den beteiligten Versicherungsunternehmen verwendet wird. Damit ist die beobachtete Häufung bei `882` fachlich plausibel.
+
+# A3: Unüberwachtes Lernen
+[Lernziele: 2.1, 2.2, 3.1, 3.4 & 5.1 | Punkte: 20]
+
+<div class="exercise" nummer="A3" text="Unüberwachtes Lernen" >
+In dieser Aufgabe werden Methoden aus dem Gebiet des Unüberwachten Lernens angewendet, um tiefergehende
+Strukturmuster (z. B. Cluster) im Hauptdatensatz zu erkennen. Eine sehr empfehlenswerte Lektüre zum
+Statistischen Lernen und insbesondere zu Methoden des Unüberwachten Lernens ist das Lehrbuch An Introduction
+to Statistical Learning, das in zwei Varianten für R bzw. Python unter https://www.statlearning.com
+verfügbar ist:
+
+G. James, D. Witten, T. Hastie & R. Tibshirani (2021): An Introduction to Statistical Learning: with Applications
+in R (2. Aufl.), Springer Texts in Statistics, https://doi.org/10.1007/978-1-0716-1418-1.
+
+G. James, D. Witten, T. Hastie, R. Tibshirani & J. Taylor (2023): An Introduction to Statistical Learning:
+with Applications in Python (1. Aufl.), Springer Texts in Statistics, https://doi.org/10.1007/978-3-031-38747-0.
+</div>
+
+## a) Clustering mit freier Methodenwahl
+<div class="exercise_part" nummer="A3.a)" text="Clustering mit freier Methodenwahl" >
+Wählen Sie drei passende numerische Merkmale (z.B. `Premium`,
+`Value_vehicle`, `Power`, `Weight`) und führen Sie eine geeignete Vorverarbeitung für das anschließende
+Clustering durch (insbesondere Skalierung; ggf. Umgang mit fehlenden Werten).Wenden Sie anschließend
+entweder k-Means oder agglomeratives hierarchisches Clustering auf Basis dieser Merkmale an. Begründen
+Sie Ihre Wahl des Clustering-Verfahrens kurz und bestimmen Sie eine sinnvolle Anzahl an Clustern
+(z. B. mithilfe einer geeigneten Heuristik), ohne dabei auf die Anzahl der Ausprägungen von `Type_risk`
+zurückzugreifen. Visualisieren Sie das resultierende Clustering in einem passenden Scatter-Plot und interpretieren
+Sie die Cluster hinsichtlich möglicher Strukturmuster im Portfolio.
+ </div>
+### Lösung:
+
+In dieser Aufgabe wird die Spalte `Power` verwendet. Beobachtungen mit `Power = 0` werden ausgeschlossen, da in der vorherigen Plausibilitätsanalyse gezeigt wurde, dass `Power = 0` vermutlich keinen echten Wert, sondern einen fehlenden bzw. implausiblen Wert darstellt.
+
+#### Auswahl der Merkmale und Vorverarbeitung
+
+Für das Clustering werden die drei numerischen Merkmale `Premium`, `Value_vehicle` und `Power` verwendet. Diese Merkmale sind fachlich sinnvoll, da sie sowohl die Prämienhöhe als auch wesentliche fahrzeugbezogene Eigenschaften abbilden.
+
+Vor dem Clustering werden die Daten bereinigt und skaliert.
+
+Da k-Means auf euklidischen Abständen basiert, müssen die Variablen skaliert werden. Ohne Skalierung würden Variablen mit größerem Wertebereich, insbesondere `Value_vehicle`, das Clustering dominieren.
+
+#### Wahl des Clustering-Verfahrens
+
+Als Clustering-Verfahren wird k-Means verwendet. Dieses Verfahren eignet sich gut für numerische, skalierte Merkmale und ist effizient auch bei größeren Datensätzen. Außerdem sind die resultierenden Clusterzentren gut interpretierbar. Ziel ist es, Gruppen von Beobachtungen zu finden, die hinsichtlich Prämie, Fahrzeugwert und Leistung möglichst ähnlich sind.
+
+```{r a3a kmeans bestimmung k}
+# Auswahl numerischer Variablen
+Vars <- Insurance_data  %>%
+  select(Premium, Value_vehicle, Power)
+# Fehlende Werte entfernen 
+Vars_clean <-Vars %>%
+             filter(Power>0) %>% 
+             na.omit() #hier nicht notwendig,aber im Allgemein (wenn ein kleiner Teil damit entfernt wird)
+
+# Skalierung
+Vars_scaled <- scale(Vars_clean)
+
+# Elbow-Methode zur Bestimmung von k
+
+#fviz_nbclust(Vars_scaled, kmeans, method = "wss")
+#Error: cannot allocate vector of size 41.5 Gb
+
+#WSS manuell brechnen
+wss <- numeric(10)
+
+for (k in 1:10) {
+  kmeans_model <- kmeans(Vars_scaled, centers = k,algorithm = "Lloyd",nstart=25,iter.max=200)
+  wss[k] <- kmeans_model$tot.withinss
+}
+
+plot(1:10, wss, type = "b", pch = 19,
+     xlab = "Anzahl Cluster k",
+     ylab = "Within Sum of Squares")
+
+```
+
+Die Elbow-Methode zeigt einen deutlichen Rückgang der Within Sum of Squares für kleine Werte von `k`. Ab etwa `k = 4` bzw. `k = 5` flacht die Kurve sichtbar ab. Zusätzliche Cluster führen danach nur noch zu einer geringeren Verbesserung. Daher erscheint eine Clusteranzahl von `k = 4` sinnvoll.
+
+Zur zusätzlichen Plausibilisierung wird die Silhouette-Methode auf einer Stichprobe verwendet, da die Berechnung auf dem vollständigen Datensatz speicherintensiv ist.
+
+```{r a3a kmeans bestimmung k silhouette}
+# Silhouette-Methode
+#fviz_nbclust(Vars_scaled, kmeans, method = "silhouette")
+#Error: cannot allocate vector of size 41.5 Gb
+sample_data <- Vars_scaled[sample(1:nrow(Vars_scaled), 8000), ]
+fviz_nbclust(sample_data, kmeans, method = "silhouette")
+```
+
+Auf Basis der Elbow-Methode und der Silhouette-Auswertung wird `k = 4` gewählt. Die Anzahl der Cluster wird dabei nicht aus der Anzahl der Ausprägungen von Type_risk abgeleitet, sondern ausschließlich anhand der Struktur der ausgewählten numerischen Merkmale bestimmt.
+
+#### Durchführung des k-Means-Clusterings
+
+```{r a3a kmeans model}
+kmeans_model <- kmeans(Vars_scaled, centers = 4,algorithm = "Lloyd",nstart=25,iter.max=200)
+# Cluster hinzufügen
+Vars_clean$cluster <- as.factor(kmeans_model$cluster)
+```
+
+Zur Interpretation werden die Clusterzentren wieder auf die ursprüngliche Skala zurücktransformiert.
+
+```{r a3a kmeans centers}
+centers_original <- sweep(kmeans_model$centers, 2, attr(Vars_scaled, "scaled:scale"), "*")
+centers_original <- sweep(centers_original, 2, attr(Vars_scaled, "scaled:center"), "+")
+centers_original
+centers_df <- as.data.frame(centers_original)
+centers_df$cluster <- as.factor(1:nrow(centers_df))
+table_visualize(centers_df,"12"," Clusterzentren",table_format=FALSE,table_format_de_flag = FALSE)
+```
+
+#### Visualisierung des Clusterings {.tabset}
+
+Zur Visualisierung werden Scatter-Plots für die drei Variablenpaare erstellt. Dadurch lässt sich erkennen, wie sich die Cluster hinsichtlich Prämie, Fahrzeugwert und Leistung voneinander unterscheiden.
+
+
+```{r a3a kmeans visualisierung 2d,echo = FALSE, results='asis'}
+# Zentroiden als Data Frame vorbereiten
+
+# Plot 1
+cat("\n##### Premium vs. Value_vehicle", "\n")
+ggplot(Vars_clean, aes(x = Premium, y = Value_vehicle, color = cluster)) +
+  geom_point(alpha = 0.6) +
+   geom_point(
+    data = centers_df,
+    aes(x = Premium, y = Value_vehicle),
+    inherit.aes = FALSE,
+    color = "black",
+    size = 4,
+    shape=8
+  ) +
+  theme_minimal()+
+  labs(
+    title = "Cluster: Premium vs. Value_vehicle",
+    x = "Premium",
+    y = "Value_vehicle",
+    color = "Cluster"
+  )
+cat("\n")
+# Plot 2
+cat("\n##### Premium vs. Power", "\n")
+ggplot(Vars_clean, aes(x = Premium, y = Power, color = cluster)) +
+  geom_point(alpha = 0.6) +
+  geom_point(
+    data = centers_df,
+    aes(x = Premium, y = Power),
+    inherit.aes = FALSE,
+    color = "black",
+    size = 4,
+    shape=8
+  ) +
+  theme_minimal() +
+ labs(
+    title = "Cluster: Premium vs. Power",
+    x = "Premium",
+    y = "Power",
+    color = "Cluster"
+  )
+cat("\n")
+# Plot 3
+cat("\n##### Value_vehicle vs. Power", "\n")
+ggplot(Vars_clean, aes(x = Value_vehicle, y = Power, color = cluster)) +
+  geom_point(alpha = 0.6) +
+  geom_point(
+    data = centers_df,
+    aes(x = Value_vehicle, y = Power),
+    inherit.aes = FALSE,
+    color = "black",
+    size = 4,
+    shape=8
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Cluster: Value_vehicle vs. Power",
+    x = "Value_vehicle",
+    y = "Power",
+    color = "Cluster"
+  )
+cat("\n")
+```
+
+
+#### Interpretation des Clusterings
+
+Die Clusteranalyse auf Basis der standardisierten Merkmale `Premium`, `Value_vehicle` und `Power` zeigt eine fachlich gut interpretierbare Segmentierung des Portfolios. Die schwarzen Sterne in den Scatterplots stellen die jeweiligen Clusterzentren dar.
+
+Cluster 2 weist die niedrigsten Werte in allen drei Merkmalen auf. Mit einer durchschnittlichen Prämie von etwa `134,67`, einem durchschnittlichen Fahrzeugwert von etwa `3.649,05` und einer durchschnittlichen Leistung von etwa `18,70` kann dieses Cluster als **Basis- bzw. Niedrigpreissegment** interpretiert werden. Es umfasst vermutlich kleine, günstige und leistungsschwache Fahrzeuge.
+
+Cluster 4 liegt in allen drei Merkmalen im mittleren Bereich. Die durchschnittliche Prämie beträgt etwa `288,43`, der durchschnittliche Fahrzeugwert etwa `15.264,31` und die durchschnittliche Leistung etwa `83,75`. Dieses Cluster beschreibt daher ein **Standard- bzw. Durchschnittssegment** des Portfolios.
+
+Cluster 1 enthält Fahrzeuge mit hohem Fahrzeugwert und hoher Leistung. Die durchschnittliche Prämie liegt bei etwa `324,01`, der durchschnittliche Fahrzeugwert bei etwa `26.296,32` und die durchschnittliche Leistung bei etwa `124,39`. Dieses Cluster kann als **höherwertiges und leistungsstärkeres Fahrzeugsegment** interpretiert werden.
+
+Cluster 3 weist eine ähnlich hohe Leistung und einen ähnlich hohen Fahrzeugwert wie Cluster 1 auf, hat jedoch mit etwa `652,97` die deutlich höchste durchschnittliche Prämie. Dieses Cluster kann daher als **Premium- bzw. High-End-Segment** beschrieben werden.
+
+Auffällig ist insbesondere der Vergleich zwischen Cluster 1 und Cluster 3: Beide Cluster haben ähnliche Werte bei `Value_vehicle` und `Power`, unterscheiden sich aber deutlich in der Prämienhöhe. Dies deutet darauf hin, dass `Premium` nicht allein durch Fahrzeugwert und Leistung erklärt wird. Weitere Merkmale wie Schadenhistorie, Region, Vertragsmerkmale oder Risikotyp könnten ebenfalls eine wichtige Rolle spielen.
+
+Insgesamt zeigen die Scatterplots eine klare Struktur im Portfolio: Es gibt ein niedrigpreisiges Segment, ein mittleres Standardsegment sowie höherwertige und prämienstärkere Segmente. Für spätere Modellierungen kann diese Clusterstruktur hilfreich sein, da sie auf heterogene Gruppen im Portfolio hinweist. Gleichzeitig spricht die Trennung der Cluster dafür, dass nichtlineare Zusammenhänge und Interaktionen zwischen den Merkmalen berücksichtigt werden sollten.
+ 
+## b) Principal Component Analysis
+<div class="exercise_part" nummer="A3.b)" text="Principal Component Analysis" >
+Beschreiben Sie kurz in eigenen Worten das Ziel und die grundsätzliche
+Vorgehensweise der Principal Component Analysis (PCA). Wenden Sie PCA auf einen geeigneten Satz
+numerischer Merkmale des Hauptdatensatzes an (ggf. denselben wie in Teilaufgabe a)). Analysieren Sie
+den Anteil erklärter Varianz der ersten Hauptkomponenten und visualisieren Sie die Daten in den ersten
+beiden Hauptkomponenten. Färben Sie anschließend die Punkte gemäß dem Wert von Type_risk ein und
+interpretieren Sie die Ergebnisse, insbesondere mit Blick auf die Trennschärfe bezüglich dieses Merkmals.
+ </div>
+### Lösung:
+
+#### Ziel und Vorgehensweise der PCA
+
+Die Principal Component Analysis (PCA) ist ein Verfahren zur Dimensionsreduktion. Ziel ist es, mehrere möglicherweise miteinander korrelierte numerische Merkmale durch wenige neue Variablen, sogenannte Hauptkomponenten, zusammenzufassen.
+
+Diese Hauptkomponenten sind lineare Kombinationen der ursprünglichen Variablen. Die erste Hauptkomponente erklärt dabei den größtmöglichen Anteil der Gesamtvarianz in den Daten. Die zweite Hauptkomponente erklärt den größtmöglichen Anteil der verbleibenden Varianz und ist unkorreliert zur ersten Hauptkomponente. Entsprechend werden weitere Hauptkomponenten gebildet.
+
+Da PCA auf Varianzen basiert, müssen die verwendeten Variablen vorher skaliert werden. Andernfalls würden Variablen mit großem Wertebereich, zum Beispiel `Value_vehicle`, die Hauptkomponenten dominieren.
+
+#### Anwendung der PCA
+
+Für die PCA werden die numerischen Merkmale `Premium`, `Value_vehicle` und `Power` verwendet. Dies sind dieselben Merkmale wie in der Clusteranalyse. 
+
+Wie in der Teilaufgabe a), werden die Daten bereinigt und die numerischen Merkmale skaliert.
+
+```{r a3b pca}
+Vars <- Insurance_data  %>%
+  select(Premium, Value_vehicle, Power,Type_risk) # mit Type_risk,da später benötigt
+# Fehlende Werte entfernen
+Vars_clean <-Vars %>%
+             filter(Power>0)  %>%
+             na.omit() 
+# Skalierung der numerischen Merkmale
+Vars_scaled <- scale(Vars_clean%>%select(-Type_risk))
+# PCA
+PCA_Model <- prcomp(Vars_scaled, center =FALSE, scale. = FALSE) #schon skaliert
+# Anteil erklärter Varianz
+summary(PCA_Model)
+# Scree-Plot
+factoextra::fviz_eig(PCA_Model)
+
+
+```
+Die PCA-Ausgabe zeigt, dass die ersten beiden Hauptkomponenten bereits einen sehr großen Teil der Gesamtvarianz erklären.
+
+Die erste Hauptkomponente `PC1` erklärt etwa `69,49 %` der Varianz. Sie bildet damit den wichtigsten gemeinsamen Strukturgradienten in den Daten ab
+
+Die zweite Hauptkomponente `PC2` erklärt weitere `23,22 %` der Varianz. Zusammen erklären `PC1` und `PC2` damit etwa `92,71 %` der gesamten Varianz. Die zweidimensionale Darstellung in den ersten beiden Hauptkomponenten ist daher sehr aussagekräftig, da nur ein relativ kleiner Informationsanteil in der dritten Komponente verbleibt.
+
+Die dritte Hauptkomponente `PC3` erklärt nur noch etwa `7,29 %` der Varianz. Sie enthält somit vergleichsweise wenig zusätzliche Information gegenüber den ersten beiden Komponenten.
+
+#### Visualisierung der ersten beiden Hauptkomponenten
+
+Im nächsten Schritt werden die Beobachtungen in den ersten beiden Hauptkomponenten dargestellt. Zusätzlich wird Type_risk als Farbe verwendet, um zu prüfen, ob die PCA-Struktur mit den Risikoklassen zusammenhängt.
+
+```{r a3b pca mit type_risk}
+# Daten in den PCA-Raum projizieren
+PCA_Data <- as.data.frame(PCA_Model$x)
+# Type_risk hinzufügen
+PCA_Data$Type_risk <- Vars_clean$Type_risk
+# Plot
+ggplot(PCA_Data, aes(x = PC1, y = PC2, color = as.factor(Type_risk))) +
+  geom_point(alpha = 0.5) +
+  theme_minimal() +
+  labs(
+    title = "PCA: Darstellung der ersten beiden Hauptkomponenten",
+    x = "PC1",
+    y = "PC2",
+    color = "Type_risk"
+  )
+```
+
+#### Interpretation der PCA-Ergebnisse mit Blick auf `Type_risk`
+
+Die Darstellung der ersten beiden Hauptkomponenten zeigt, dass die Beobachtungen im PCA-Raum nicht vollständig nach `Type_risk` getrennt sind. Es gibt deutliche Überlappungen zwischen den Risikoklassen, insbesondere im zentralen Bereich des Plots. Das bedeutet, dass die verwendeten numerischen Merkmale `Premium`, `Value_vehicle` und `Power` allein nicht ausreichen, um `Type_risk` eindeutig zu trennen.
+
+Trotzdem sind gewisse Strukturmuster erkennbar. Beobachtungen mit `Type_risk = 3` streuen am stärksten und reichen weit in Richtung hoher Werte der ersten Hauptkomponente `PC1`. Dies deutet darauf hin, dass diese Risikoklasse besonders heterogen ist und viele Fahrzeuge mit höheren Werten bei den verwendeten Merkmalen enthält. Auch einzelne extreme Beobachtungen mit sehr hohen `PC1`- oder `PC2`-Werten gehören überwiegend zu `Type_risk = 3`.
+
+`Type_risk = 1` liegt dagegen stärker im linken bzw. unteren Bereich des PCA-Raums. Dies spricht dafür, dass diese Risikoklasse tendenziell niedrigere Werte bei den betrachteten Merkmalen aufweist. `Type_risk = 4` ist ebenfalls eher in einem kompakten Bereich mit niedrigen bis mittleren Komponentenwerten konzentriert. `Type_risk = 2` liegt überwiegend im mittleren Bereich und überlappt stark mit `Type_risk = 3`.
+
+Insgesamt zeigt die PCA somit eine teilweise, aber keine vollständige Trennschärfe bezüglich `Type_risk`. Die Risikoklassen unterscheiden sich zwar in ihrer Lage und Streuung im PCA-Raum, die Grenzen zwischen den Klassen sind jedoch nicht klar separiert. Für spätere Modellierungen bedeutet dies, dass `Type_risk` nicht vollständig durch `Premium`, `Value_vehicle` und `Power` ersetzt werden kann. Das Merkmal sollte daher weiterhin als eigenständige erklärende Variable berücksichtigt werden.
+
+
+## c) Independent Component Analysis
+<div class="exercise_part" nummer="A3.c)" text="Independent Component Analysis" >
+Beschreiben Sie kurz in eigenen Worten das Ziel und die grundsätzliche
+Vorgehensweise der Independent Component Analysis (ICA) und gehen Sie dabei auf Gemeinsamkeiten
+und Unterschiede zur PCA ein. Wenden Sie ICA auf denselben Merkmalsraum wie in Teilaufgabe b) an
+und visualisieren Sie die Daten in den ersten beiden unabhängigen Komponenten. Färben Sie die Punkte
+wiederum ex post gemäß Type_risk ein und vergleichen Sie die Trennschärfe und Interpretierbarkeit der
+Komponenten mit den Ergebnissen der PCA.
+ </div>
+ 
+### Lösung:
+
+#### Ziel und Vorgehensweise der ICA
+
+Die Independent Component Analysis (ICA) ist ein Verfahren zur Transformation mehrerer beobachteter Variablen in neue Komponenten. Ziel ist es, Komponenten zu finden, die möglichst **statistisch unabhängig** voneinander sind. Damit unterscheidet sich ICA von der PCA, bei der die neuen Komponenten lediglich unkorreliert sind und möglichst viel Varianz erklären.
+
+Wie die PCA ist auch die ICA ein lineares Verfahren zur Darstellung der Daten in einem neuen Koordinatensystem. Beide Verfahren können zur Dimensionsreduktion und zur Visualisierung komplexer Datenstrukturen eingesetzt werden. Der zentrale Unterschied liegt jedoch im Optimierungskriterium:
+
+| Aspekt | PCA | ICA |
+|---|---|---|
+| **Grundidee** | PCA sucht neue Achsen, entlang derer die Daten möglichst viel Varianz aufweisen. | ICA sucht Komponenten, die möglichst statistisch unabhängig voneinander sind. |
+| **Art der Komponenten** | Die Hauptkomponenten sind unkorreliert und orthogonal. | Die unabhängigen Komponenten sollen möglichst statistisch unabhängig sein.Die Komponenten sind nicht notwendigerweise orthogonal.|
+| **Kriterium** | Maximierung der erklärten Varianz. | Maximierung der statistischen Unabhängigkeit |
+| **Reihenfolge der Komponenten** | Die Komponenten sind nach erklärter Varianz geordnet. | Die Komponenten haben keine natürliche Reihenfolge. |
+| **Interpretation** | PCA-Komponenten beschreiben die wichtigsten Variationsrichtungen in den Daten. | ICA-Komponenten können als latente, voneinander unabhängige Einflussfaktoren interpretiert werden. |
+| **Typische Anwendung** | Dimensionsreduktion, Visualisierung, Rauschreduktion, Vorverarbeitung. | Quellentrennung, Signalzerlegung, Identifikation unabhängiger Muster. |
+| **Beispielhafte Bedeutung hier** | PCA zeigt, welche Kombinationen der Merkmale `Premium`, `Value_vehicle` und `Power` die größte Streuung erklären. | ICA kann Hinweise darauf geben, ob sich unabhängige zugrunde liegende Strukturen in den Merkmalen erkennen lassen. |
+
+Während PCA besonders gut geeignet ist, um die wichtigsten Varianzrichtungen in den Daten zu identifizieren, versucht ICA eher, zugrunde liegende unabhängige Einflussquellen bzw. Signale zu trennen.
+
+#### Anwendung der ICA
+
+Die ICA wird auf denselben Merkmalsraum wie die PCA angewendet, also auf die skalierten Variablen `Premium`, `Value_vehicle` und `Power`. Die Skalierung wurde bereits im Rahmen der PCA durchgeführt und wird hier wiederverwendet.
+
+```{r a3c ica}
+
+# ICA mit zwei unabhängigen Komponenten
+ICA_Model <- fastICA(Vars_scaled, n.comp = 2)
+ICA_Data <- as.data.frame(ICA_Model$S)
+colnames(ICA_Data) <- c("IC1", "IC2")
+
+# Type_risk nachträglich hinzufügen
+ICA_Data$Type_risk <- Vars_clean$Type_risk
+
+
+# Visualisierung
+ggplot(ICA_Data, aes(x = IC1, y = IC2, color = as.factor(Type_risk))) +
+  geom_point(alpha = 0.5) +
+  theme_minimal() +
+  labs(
+    title = "ICA: Darstellung der ersten beiden unabhängigen Komponenten",
+    x = "IC1",
+    y = "IC2",
+    color = "Type_risk"
+  )
+```
+
+#### Interpretation der ICA-Ergebnisse
+
+Die ICA-Darstellung der ersten beiden unabhängigen Komponenten zeigt keine klare Trennung der Beobachtungen nach `Type_risk`. Die Risikoklassen überlappen sich deutlich, insbesondere im zentralen Bereich der Punktwolke. Damit reicht der betrachtete Merkmalsraum aus `Premium`, `Value_vehicle` und `Power` auch nach der ICA-Transformation nicht aus, um die Risikoklassen eindeutig voneinander zu separieren.
+
+Insgesamt bestätigt die ICA die Ergebnisse der PCA: `Type_risk` hängt teilweise mit den Merkmalen `Premium`, `Value_vehicle` und `Power` zusammen, sollte aber in späteren Modellierungen weiterhin als eigenständige erklärende Variable berücksichtigt werden.
+
+## d)Partial Least Squares
+<div class="exercise_part" nummer="A3.d)" text="Partial Least Squares" >
+Beschreiben Sie kurz in eigenen Worten das Ziel und die grundsätzliche Vorgehensweise
+der Methode Partial Least Squares (PLS) und gehen Sie dabei auf Gemeinsamkeiten und
+Unterschiede zur PCA ein. Wenden Sie PLS mit der Zielgröße `N_claims_year` auf einen geeigneten Satz
+numerischer Prädiktorvariablen an und analysieren Sie die ersten beiden PLS-Komponenten (z. B. durch
+Streudiagramme oder Ladungsstrukturen). Erläutern Sie abschließend, welche Informationen PLS im Vergleich
+zur PCA zusätzlich liefern kann.
+</div>
+
+### Lösung:
+
+#### Ziel und Vorgehensweise von PLS
+
+Partial Least Squares (PLS) ist ein Verfahren zur Dimensionsreduktion, das im Unterschied zur PCA die Zielvariable aktiv berücksichtigt. Während die PCA neue Komponenten so konstruiert, dass sie möglichst viel Varianz in den Prädiktorvariablen erklären, sucht PLS nach Komponenten, die gleichzeitig die Struktur der Prädiktoren zusammenfassen und möglichst gut mit der Zielgröße zusammenhängen.
+
+#### Vergleich zu PCA
+
+PCA und PLS haben gemeinsam, dass beide Verfahren neue Komponenten als lineare Kombinationen der ursprünglichen Variablen bilden. Beide können daher zur Dimensionsreduktion verwendet werden.
+
+Der zentrale Unterschied besteht darin, dass PCA ein **unüberwachtes** Verfahren ist: Die Zielvariable wird nicht berücksichtigt. PCA maximiert lediglich die erklärte Varianz in den Prädiktoren.
+
+PLS ist dagegen ein **überwachtes** Verfahren: Die Komponenten werden so konstruiert, dass sie möglichst relevant für die Zielgröße sind. PLS kann daher Informationen liefern, welche Kombinationen der Prädiktoren besonders stark mit der Zielvariable zusammenhängen.
+
+#### Anwendung auf `N_claims_year`
+
+Als Zielgröße wird `N_claims_year` verwendet. Als numerische Prädiktoren werden `Premium`, `Value_vehicle`, `Power` und `Weight` ausgewählt. Diese Merkmale sind fachlich plausibel, da sie sowohl die Prämienhöhe als auch wesentliche fahrzeugbezogene Eigenschaften abbilden.
+
+Die Daten werden analog zu den Teilaufgaben a) bis c) bereinigt. Das PLS-Modell wird mit zwei Komponenten geschätzt und mittels Kreuzvalidierung validiert.
+
+
+```{r a3d pls}
+# Prädiktoren und Zielvariable
+PLS_Data <- Insurance_data %>%
+  select(Premium, Value_vehicle, Power, Weight, N_claims_year) %>%
+  filter(Power > 0) %>%
+  na.omit()
+
+# PLS-Modell mit zwei Komponenten
+PLS_Model <- plsr(
+  N_claims_year ~ .,
+  data = PLS_Data,
+  scale = TRUE,
+  ncomp = 2,
+  validation = "CV"
+)
+
+# Zusammenfassung
+summary(PLS_Model)
+
+# Scores extrahieren
+PLS_scores <- data.frame(
+  PLS1 = PLS_Model$scores[, 1],
+  PLS2 = PLS_Model$scores[, 2],
+  N_claims_year = PLS_Data$N_claims_year
+)
+
+# Visualisierung der ersten beiden PLS-Komponenten
+ggplot(PLS_scores, aes(x = PLS1, y = PLS2, color = N_claims_year)) +
+  geom_point(alpha = 0.6) +
+  theme_minimal() +
+  labs(
+    title = "PLS: Erste beiden Komponenten mit Zielgröße N_claims_year",
+    x = "PLS1",
+    y = "PLS2",
+    color = "N_claims_year"
+  )
+```
+
+#### Interpretation des PLS-Streudiagramms
+
+Das Streudiagramm der ersten beiden PLS-Komponenten zeigt, dass die meisten Beobachtungen in einem kompakten Bereich um niedrige bis mittlere Werte von `PLS1` und `PLS2` liegen. Gleichzeitig gibt es einige Beobachtungen mit deutlich höheren oder niedrigeren Komponentenwerten, also einzelne Ausreißer im PLS-Raum.
+
+Die Farbskala zeigt die Zielgröße `N_claims_year`. Dabei ist erkennbar, dass der überwiegende Teil der Beobachtungen dunkel eingefärbt ist, also `N_claims_year = 0` oder nur sehr geringe Schadenanzahlen aufweist. Höhere Schadenanzahlen treten nur vereinzelt auf und bilden kein klar abgegrenztes Muster im Raum der ersten beiden PLS-Komponenten.
+
+Das klassische PLS-Modell basiert jedoch auf linearen Zusammenhängen und ist eher für kontinuierliche Zielgrößen geeignet. Eine Zielgröße wie `N_claims_year` mit vielen Nullwerten und diskreter Zählstruktur kann dadurch nur eingeschränkt angemessen modelliert werden. Die geringe durch PLS erklärte Varianz von `N_claims_year` ist daher nicht überraschend.
+
+Damit ist keine deutliche Trennung zwischen Policen mit niedriger und hoher Schadenanzahl erkennbar. Die Punkte mit höheren Schadenanzahlen liegen nicht konzentriert in einem bestimmten Bereich, sondern sind relativ vereinzelt innerhalb bzw. am Rand der Punktwolke verteilt.
+
+Dies passt zur Modellzusammenfassung: Die ersten beiden PLS-Komponenten erklären nur einen sehr kleinen Anteil der Varianz von `N_claims_year`. Die ausgewählten Merkmale `Premium`, `Value_vehicle`, `Power` und `Weight` enthalten also zwar eine gemeinsame Struktur, diese Struktur ist jedoch nur schwach mit der jährlichen Schadenanzahl verbunden.
+
+## e)Einordnung & Empfehlung
+<div class="exercise_part" nummer="A3.e)" text="Einordnung & Empfehlung" >
+Ordnen Sie die Ergebnisse aus den Teilaufgaben a) bis d) kurz ein und
+geben Sie eine begründete Empfehlung, welche Methode bzw. welche Kombination von Methoden Sie im
+vorliegenden Kontext zur Unterstützung nachgelagerter Modellierungsschritte bevorzugen würden.
+</div>
+
+### Lösung:
+
+In den Teilaufgaben a) bis d) wurden mehrere unüberwachte bzw. dimensionsreduzierende Verfahren auf ausgewählte numerische Merkmale des Hauptdatensatzes angewendet. Die Verfahren liefern unterschiedliche Perspektiven auf die Struktur des Portfolios.
+
+#### Einordnung der Ergebnisse aus Teilaufgabe a) bis d)
+
+Das **k-Means-Clustering** aus Teilaufgabe a) zeigt eine gut interpretierbare Segmentierung des Portfolios. Auf Basis von `Premium`, `Value_vehicle` und `Power` konnten vier Gruppen identifiziert werden, die sich fachlich sinnvoll als Niedrigpreis-, Standard-, höherwertiges Fahrzeug- und Premiumsegment interpretieren lassen. Besonders relevant ist dabei, dass sich einige Cluster zwar hinsichtlich Fahrzeugwert und Leistung ähneln, aber deutlich unterschiedliche Prämienniveaus aufweisen. Dies deutet darauf hin, dass weitere Merkmale neben den betrachteten Fahrzeugvariablen für die Prämienhöhe relevant sind.
+
+Die **PCA** aus Teilaufgabe b) zeigt, dass die ersten beiden Hauptkomponenten bereits einen sehr großen Teil der Varianz in den verwendeten numerischen Merkmalen erklären. Damit eignet sich PCA gut, um die gemeinsame Struktur der Variablen `Premium`, `Value_vehicle` und `Power` kompakt darzustellen. Die Einfärbung nach `Type_risk` zeigt jedoch keine vollständige Trennung der Risikoklassen. `Type_risk` wird also durch diese numerischen Merkmale nicht vollständig ersetzt.
+
+Die **ICA** aus Teilaufgabe c) bestätigt im Wesentlichen das Ergebnis der PCA. Auch in den unabhängigen Komponenten ist keine klare Trennung nach `Type_risk` sichtbar. Im Vergleich zur PCA ist die ICA in diesem Kontext weniger gut fachlich interpretierbar, da die Komponenten nicht nach erklärter Varianz geordnet sind und keine so direkte Bedeutung wie die Hauptkomponenten der PCA haben.
+
+Die **PLS-Analyse** aus Teilaufgabe d) liefert eine überwachte Perspektive, da hier die Zielgröße `N_claims_year` berücksichtigt wird. Die ersten beiden PLS-Komponenten erklären zwar einen großen Teil der Struktur in den Prädiktoren, aber nur einen sehr kleinen Anteil der Varianz von `N_claims_year`. Damit zeigen die Ergebnisse, dass die betrachteten Merkmale `Premium`, `Value_vehicle`, `Power` und `Weight` allein nur schwach zur Erklärung der jährlichen Schadenanzahl geeignet sind.
+
+#### Empfehlung für nachgelagerte Modellierungsschritte
+
+Für die Unterstützung nachgelagerter Modellierungsschritte würde ich im vorliegenden Kontext vor allem eine **Kombination aus k-Means-Clustering und PCA** bevorzugen.
+
+Das k-Means-Clustering liefert fachlich gut interpretierbare Segmente des Portfolios. Diese Cluster können als zusätzliche erklärende Variable oder als Grundlage für segmentierte Modellierungen verwendet werden. Insbesondere können sie helfen, heterogene Gruppen im Bestand zu identifizieren und Unterschiede zwischen einfachen, durchschnittlichen und hochpreisigen Fahrzeugsegmenten besser zu berücksichtigen.
+
+Die PCA eignet sich ergänzend dazu, um stark korrelierte numerische Merkmale kompakt zusammenzufassen. Die ersten beiden Hauptkomponenten erklären einen sehr großen Anteil der Varianz und können daher als verdichtete Merkmale in späteren Modellen verwendet werden, insbesondere wenn Multikollinearität zwischen `Premium`, `Value_vehicle` und `Power` problematisch ist.
+
+Die ICA würde ich in diesem Kontext eher nicht priorisieren. Sie liefert keine deutlich bessere Trennung nach `Type_risk` als die PCA und ist weniger einfach fachlich zu interpretieren. Daher bringt sie für die konkrete Fragestellung nur begrenzten Zusatznutzen.
+
+PLS ist methodisch interessant, weil es die Zielgröße `N_claims_year` berücksichtigt. Die Ergebnisse zeigen jedoch, dass die gewählten Prädiktoren die Schadenanzahl nur sehr schwach erklären. Daher würde ich PLS in dieser Form nicht als primäre Methode zur Modellierung der Schadenanzahl verwenden.
+
+# A4: Modellierungsvorbereitungen
+[Lernziele: 2.1 & 5.1; 7 Punkte]
+<div class="exercise" nummer="A4" text="Modellierungsvorbereitungen" >
+In dieser Aufgabe werden Vorbereitungen für die Modellierungen in Teil B getroffen. Ausgangspunkt ist der
+Hauptdatensatz ```Motor vehicle insurance data.csv``` wie er nach Teilaufgabe A1 a) vorliegt.
+</div>
+
+## a)  Einfaches Feature Engineering
+<div class="exercise_part" nummer="A4.a)" text=" Einfaches Feature Engineering" >
+Ergänzen Sie den Hauptdatensatz um die folgenden Merkmale mit Bezug
+auf Date_last_renewal:
+– Year als Policenjahr, definiert wie in Teilaufgabe A2 a)
+– DrivAge als Fahreralter (vollendete Jahre seit Date_birth)
+– DrivLicenceAge als Führerscheinalter in vollendeten Jahren seit Date_driving_licence, mindestens 0
+– VehAge als Fahrzeugalter (Differenz Year und Year_matriculation, da Baujahr unbekannt)
+– Exposure als jahresanteilige Versicherungszeit, definiert wie in Teilaufgabe A2 a)
+Die Anzahl Tage im Jahr kann durch den Wert 365,25 approximiert werden.
+Zeigen Sie (mindestens) die statistischen Kennzahlen N, MIN, MAX, MEDIAN und MEAN für die neuen Merkmale
+an und stellen Sie sicher, dass es bei den neuen Merkmalen keine fehlenden Werte gibt.
+</div>
+
+### Lösung:
+
+In dieser Aufgabe wird der Hauptdatensatz um mehrere neue Merkmale ergänzt, die später für die Modellierung in Teil B verwendet werden können. Ausgangspunkt ist der Hauptdatensatz `Insurance_data`, wie er nach Teilaufgabe A1 a) vorliegt.
+
+Die neuen Merkmale werden jeweils mit Bezug auf `Date_last_renewal` berechnet:
+
+- `Year`: Policenjahr, definiert als Kalenderjahr von `Date_last_renewal`,
+- `DrivAge`: Fahreralter in vollendeten Jahren seit `Date_birth`,
+- `DrivLicenceAge`: Führerscheinalter in vollendeten Jahren seit `Date_driving_licence`, mindestens jedoch `0`,
+- `VehAge`: Fahrzeugalter, berechnet als Differenz zwischen `Year` und `Year_matriculation`,
+- `Exposure`: jahresanteilige Versicherungszeit, ähnlich zur Definition in Teilaufgabe A2 a). 
+              (Die Begründung für die abweichende Definition liegt in der Beschreibung der Implausibilität 2 in Teilaufgabe A1.a))
+
+```{r a4a hauptdatensatz feature engineering}
+Input_data<-Insurance_data %>%
+            mutate(
+               # Tatsächliches Ende der Vertragsperiode:
+               # entweder reguläres Ende oder früheres Storno-/Verfallsdatum
+               End_date=pmin(Date_next_renewal,Date_lapse, na.rm = TRUE), # Anders als in A2a - bitte Implausibilität 2 bei A1a) lesen! 
+               # Policenjahr
+               Year=year(Date_last_renewal),
+                # Fahreralter in vollendeten Jahren
+               DrivAge=interval(Date_birth, Date_last_renewal) %/% years(1),
+                # Führerscheinalter in vollendeten Jahren, mindestens 0
+               DrivLicenceAge=pmax(interval(Date_driving_licence, Date_last_renewal) %/% years(1),0),
+                 # Fahrzeugalter
+               VehAge=Year-Year_matriculation,
+               # Exposure in Jahreseinheiten
+                Exposure=time_length(interval(Date_last_renewal,End_date),"years"),
+               
+            ) %>%
+         filter(Exposure>0)  %>% 
+    # Anders als in A2a - Für die Begründung  bitte Implausibilität 2 bei A1a) lesen! 
+  select(-End_date) #Entfernung der Hilfsspalte
+```
+
+Im nächsten Schritt werden die statistischen Kennzahlen der neu erzeugten Merkmale berechnet. Ausgegeben werden die Anzahl nicht fehlender Werte (N), Minimum (MIN), Maximum (MAX), Median (MEDIAN) und Mittelwert (MEAN).
+
+```{r a4a neue spalten statistik}
+New_vars <- c("Year", "DrivAge", "DrivLicenceAge", "VehAge", "Exposure")
+
+A4_summary <- Input_data %>%
+  summarise(
+    across(
+      all_of(New_vars),
+      list(
+        N = ~sum(!is.na(.x)),
+        MIN = ~min(.x, na.rm = TRUE),
+        MAX = ~max(.x, na.rm = TRUE),
+        MEDIAN = ~median(.x, na.rm = TRUE),
+        MEAN = ~mean(.x, na.rm = TRUE)
+      ),
+      .names = "{.col}_{.fn}"
+    )
+  ) %>%
+  tidyr::pivot_longer(
+    cols = everything(),
+    names_to = c("Variable", ".value"),
+    names_pattern = "(.+)_(N|MIN|MAX|MEDIAN|MEAN)"
+  )
+
+
+  print(A4_summary)
+```
+Der Unterschied in der Anzahl der Beobachtungen zwischen dem Hauptdatensatz und dem Ergebnisdatensatz entsteht durch den Filter `Exposure > 0`.
+
+Weitere Details und die fachliche Begründung hierzu finden sich in Teilaufgabe A1.a), Abschnitt **„2. Wichtige Auffälligkeit: Beobachtungen mit `Date_lapse <= Date_last_renewal`“**.
+
+Abschließend wird geprüft, ob in den neuen Merkmalen fehlende Werte vorhanden sind.
+
+```{r a4a neue spalten fehlende werte}
+  Missing_stat<-missing_data_statistics(Input_data[New_vars])
+  table_visualize(Missing_stat,"13","Fehlende Werte Auswertung pro neuer Merkmal",table_format=TRUE,table_format_de_flag = FALSE)
+```
+
+
+## b) Kritische Merkmale
+<div class="exercise_part" nummer="A4.b)" text="Kritische Merkmale" >
+Betrachten Sie die Merkmale ```N_claims_history ```und ```R_Claims_history```. Zeigen
+Sie an einem Beispiel und insgesamt, dass diese Merkmale für alle Jahre einer Police gleich sind, und
+erläutern Sie, weshalb diese Merkmale als Features für prädiktive Modelle ungeeignet sind. Nennen und
+begründen Sie auf Basis der Dokumentation und der bisherigen Datenanalyse, welche weiteren Merkmale
+diesbezüglich kritisch sein könnten, und ggf. auch, welche wichtigen Angaben zum Vertrag fehlen und was
+das für die Eignung des Datensatzes als Grundlage für eine Tarifentwicklung bedeutet.
+</div>
+### Lösung:
+
+####  Merkmale `N_claims_history` und `R_Claims_history`
+
+Zunächst werden die Merkmale `N_claims_history` und `R_Claims_history` betrachtet. Beide Variablen beziehen sich auf die Schadenhistorie einer Police. Für prädiktive Modelle ist dabei besonders wichtig, ob diese Merkmale nur Informationen enthalten, die zum jeweiligen Zeitpunkt der Prognose bereits bekannt wären, oder ob sie Informationen aus der Zukunft enthalten.
+
+Im ersten Schritt wird beispielhaft eine `ID` betrachtet, die in mehreren Jahren vorkommt und für die `N_claims_history > 0` gilt.
+
+```{r a4b zufallsbeispiel}
+# IDs mit Beobachtungen in mindestens zwei Jahren
+# und mit positiver Schadenhistorie
+valid_ids <- Input_data %>%
+  group_by(ID) %>%
+  summarise(n_years = n_distinct(Year), min_N_claims_history=min(N_claims_history)) %>%
+  filter(n_years >= 2 & min_N_claims_history>0) %>%
+  pull(ID)
+# Zufällige ID auswählen
+random_id <- sample(valid_ids, 1)
+Input_data%>%
+  filter(ID==random_id) %>%
+  select(ID,Year,N_claims_history,R_Claims_history)
+
+```
+An diesem Beispiel ist erkennbar, dass `N_claims_history` und `R_Claims_history` über alle Jahre derselben ID konstant bleiben.
+
+Im nächsten Schritt wird geprüft, ob dies für alle `ID`s gilt. Dafür wird für jede `ID` das Minimum und Maximum der beiden Merkmale berechnet. Wenn Minimum und Maximum jeweils identisch sind, dann ist das Merkmal innerhalb einer `ID` über alle Jahre konstant.
+
+```{r a4b beweis}
+Counterexample<-Insurance_data %>%
+  group_by(ID) %>%
+  summarise(min_N_claims_history=min(N_claims_history),
+            max_N_claims_history=max(N_claims_history),
+            min_R_Claims_history=min(R_Claims_history),
+            max_R_Claims_history=max(R_Claims_history)) %>%
+  filter(min_N_claims_history!=max_N_claims_history | min_R_Claims_history!=max_R_Claims_history)
+print(Counterexample)
+```
+
+##### Warum sind diese Merkmale für prädiktive Modelle ungeeignet?
+
+Für prädiktive Modelle dürfen nur Informationen verwendet werden, die zum Prognosezeitpunkt bekannt sind. Da `N_claims_history` und `R_Claims_history` für alle Jahre einer Police identisch sind, bilden sie offenbar nicht die jeweils bis zu diesem Jahr bekannte Schadenhistorie ab, sondern eine übergreifende Historie der Police.
+
+Dadurch können Informationen aus zukünftigen Jahren in das Modell einfließen. Dies führt zu **Data Leakage** bzw. **Look-ahead Bias**: Das Modell würde künstlich gute Ergebnisse liefern, die in einer echten Prognosesituation nicht erreichbar wären.
+
+Daher sollten `N_claims_history` und `R_Claims_history` nicht als erklärende Variablen für prädiktive Modelle verwendet werden.
+
+#### Weitere kritische Merkmale und fehlende Angaben
+
+Neben `N_claims_history` und `R_Claims_history` sollten auch weitere Merkmale kritisch betrachtet werden.
+
+`Cost_claims_year` und `N_claims_year` sind direkte Ergebnisgrößen des betrachteten Jahres. Sie dürfen nicht als erklärende Variablen verwendet werden, wenn Schadenkosten oder Schadenanzahl prognostiziert werden sollen, da sie die Zielgröße selbst bzw. eng damit verbundene Informationen enthalten.
+
+`Premium` ist abhängig vom Modellierungsziel kritisch. Für die Modellierung der Schadenanzahl oder des Schadenbedarfs kann `Premium` problematisch sein, weil die Prämie bereits eine Einschätzung des Versicherers über das Risiko enthält. Sie kann daher viele andere Risikomerkmale indirekt bündeln und die Interpretation eines Modells erschweren. Für Analysen der Profitabilität oder Schadenquote ist sie dagegen eine wichtige Bezugsgröße.
+
+Für eine echte Tarifentwicklung fehlen außerdem wichtige vertragliche und risikorelevante Angaben, zum Beispiel Deckungsumfang, Selbstbehalt, Bonus-Malus- bzw. Schadenfreiheitsklasse, jährliche Fahrleistung, Nutzungsart des Fahrzeug sowie  detailliertere regionale Informationen. Auch eine zeitlich korrekt abgegrenzte Schadenhistorie bis zum jeweiligen Policenjahr wäre notwendig.
+
+Damit eignet sich der Datensatz gut für explorative Analysen und methodische Übungen. Als alleinige Grundlage für eine belastbare Tarifentwicklung ist er jedoch nur eingeschränkt geeignet, da mehrere wichtige Tarifierungsmerkmale fehlen und einige vorhandene Merkmale potenziell zukünftige Informationen enthalten. 
+
+
+## c) Aufbereitung des Datensatzes
+<div class="exercise_part" nummer="A4.c)" text="Aufbereitung des Datensatzes" >
+ Erstellen Sie einen neuen Datensatz, der all jene Einträge aus dem in
+Teilaufgabe A4 a) aufbereiteten Datensatz enthält, die folgende drei Bedingungen erfüllen: `Type_risk = 3`,
+`Year = 2016`, `Policies_in_force = 1`. Entfernen Sie anschließend die Merkmale `ID`,
+`Date_start_contract`, `Date_last_renewal`, `Date_next_renewal`, `Date_birth`, `Date_driving_licence`,
+`Date_lapse`, `Type_risk`, `N_claims_history`, `R_Claims_history`, `Max_policies`, `Max_products`,
+`Year_matriculation`, `Year`, `Policies_in_force` und `Length` aus dem Datensatz. Kappen Sie abschließend
+die maximale Schadenanzahl `N_claims_year` auf 10.
+Verifizieren Sie, dass der erhaltene Datensatz aus 15.874 Zeilen und 19 Spalten besteht und keine fehlenden
+Werte enthält.
+</div>
+
+### Lösung:
+
+```{r a4c datenaufbereitung}
+Input_data<-Insurance_data %>%
+            mutate(
+               # Tatsächliches Ende der Vertragsperiode:
+               # entweder reguläres Ende oder früheres Storno-/Verfallsdatum
+               End_date=pmin(Date_next_renewal,Date_lapse, na.rm = TRUE), # Anders als in A2a - Der    Grund bitte Implausibilität 2 bei A1a) lesen! 
+               # Policenjahr
+               Year=year(Date_last_renewal),
+                # Fahreralter in vollendeten Jahren
+               DrivAge=interval(Date_birth, Date_last_renewal) %/% years(1),
+                # Führerscheinalter in vollendeten Jahren, mindestens 0
+               DrivLicenceAge=pmax(interval(Date_driving_licence, Date_last_renewal) %/% years(1),0),
+                 # Fahrzeugalter
+               VehAge=Year-Year_matriculation,
+               # Exposure in Jahreseinheiten
+                Exposure=time_length(interval(Date_last_renewal,End_date),"years"),
+               
+            ) %>%
+         filter(Exposure>0)  %>% 
+  select(-End_date) %>%
+           filter(Year==2016 & Type_risk=="3" & Policies_in_force==1 & DrivLicenceAge>=0 ) %>%
+        select(-ID,-Date_start_contract,-Date_last_renewal,-Date_next_renewal,-Date_birth,-Date_driving_licence,
+               -Date_lapse,-Type_risk,-N_claims_history,-R_Claims_history,-Max_policies,-Max_products,-Year_matriculation,
+               -Year,-Policies_in_force,-Length) %>%
+       mutate (
+              N_claims_year=pmin(N_claims_year,10)
+            )
+
+          
+dim(Input_data)
+sum(is.na(Input_data))
+```
+
+
+Die Prüfung bestätigt, dass der Modellierungsdatensatz die erwarteten Dimensionen besitzt und keine fehlenden Werte enthält. Damit ist der Datensatz für die weiteren Modellierungsschritte vorbereitet.
+
+Im letzten Schritt wird der aufbereitete Datensatz für Teil B der Prüfung exportiert. Der Datensatz wird unter dem Namen `Prepared_data.csv` im Ordner `data` gespeichert. Da es sich in diesem konkreten Beispiel nicht um einen Big-Data-Datensatz handelt, ist das CSV-Format hierfür ausreichend.
+
+Zusätzlich werden die Dimensionen des Datensatzes, also die Anzahl der Zeilen und Spalten, sowie Prüfsummen für alle numerischen Merkmale berechnet und in der Datei `dim_sum_check.csv` gespeichert. Diese Prüfsummen können in Teil B verwendet werden, um nach dem erneuten Einlesen der Datei zu prüfen, ob der Datenimport korrekt erfolgt ist.
+
+```{r a4c summen und dim check}
+# Summenzeile erzeugen
+sum_row <- Input_data %>%
+  summarise(
+    across(where(is.numeric), ~ sum(.x, na.rm = TRUE)),
+    across(where(~ !is.numeric(.x)), ~ NA)
+  )
+
+# Reihenfolge der Spalten beibehalten
+sum_row <- sum_row %>% select(names(Input_data))
+dim_sum_check<-cbind(dim(Input_data)[1],dim(Input_data)[2],sum_row)
+names(dim_sum_check)[1:2]<-c("rows","columns")
+print(as_tibble(dim_sum_check))
+```
+
+
+```{r a4c export}
+# Export
+write.table(
+ Input_data,
+  file = here("Data", "Prepared_data.csv"),
+  sep = ";",
+  dec = ".",
+  row.names = FALSE,
+  quote = FALSE,
+  na = ""
+)
+write.table(
+  dim_sum_check,
+  file = here("Data", "dim_sum_check.csv"),
+  sep = ";",
+  dec = ".",
+  row.names = FALSE,
+  quote = FALSE,
+  na = ""
+)
+```
+
+## Reproduzierbarkeit (Fortsetzung zu A1.a)
+
+Wie bereits in Teilaufgabe A1.a) erwähnt, wird am Ende dieses RMarkdown-Dokuments die Sitzungsinformation ausgegeben. Dadurch werden alle relevanten technischen Informationen zur verwendeten R-Umgebung dokumentiert, insbesondere R-Version, geladene Pakete und Paketversionen. Dies unterstützt die Reproduzierbarkeit der Analyse.
+
+```{r a1a reproduzierbarkeit sitzung info}
+sessionInfo_attached <- function() {
+  si <- sessionInfo()
+  
+  cat("R version:", si$R.version$version.string, "\n")
+  cat("Platform:", si$platform, "\n")
+  cat("Running under:", si$running, "\n\n")
+  
+  cat("Attached base packages:\n")
+  print(si$basePkgs)
+  
+  cat("\nOther attached packages:\n")
+  pkgs <- si$otherPkgs
+  
+  if (is.null(pkgs)) {
+    return(data.frame(
+      Package = character(),
+      Version = character()
+    ))
+  }
+  
+  data.frame(
+    Package = names(pkgs),
+    Version = vapply(pkgs, function(x) x$Version, character(1)),
+    row.names = NULL
+  )
+}
+sessionInfo_attached()
+```
+
+
